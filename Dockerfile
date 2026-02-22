@@ -1,50 +1,49 @@
 FROM node:24.13-bookworm-slim
 
-# Install pnpm, Piper TTS and runtime dependencies
-RUN apt-get update && \
-        apt-get install -y --no-install-recommends \
-            ca-certificates \
-            curl \
-            python3 \
-            python3-pip \
-            python3-venv && \
-        rm -rf /var/lib/apt/lists/* && \
-        npm install -g pnpm && \
-        python3 -m venv /opt/piper-venv && \
-        /opt/piper-venv/bin/pip install --no-cache-dir --upgrade pip && \
-        /opt/piper-venv/bin/pip install --no-cache-dir piper-tts pathvalidate
+# Use bash and pipefail for safer builds
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Make Piper CLI available on PATH
-ENV PATH="/opt/piper-venv/bin:${PATH}"
+# Common paths and settings
+ENV PIP_NO_CACHE_DIR=1 \
+    VENV_DIR=/opt/piper-venv \
+    APP_DIR=/app \
+    MODELS_DIR=/app/models \
+    HF_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US" \
+    VOICES="lessac ryan libritts_r libritts ljspeech amy joe john kathleen kristin"
 
-# Set working directory
-WORKDIR /app
+WORKDIR $APP_DIR
 
-# Download a default Piper voice model
-RUN mkdir -p /app/models && \
-        curl -L -o /app/models/en_US-lessac-medium.onnx \
-            https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx && \
-        curl -L -o /app/models/en_US-lessac-medium.onnx.json \
-            https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json
+# System deps, pnpm, Python venv, piper packages, and voice models
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+            ca-certificates curl ffmpeg \
+            python3
+            python3-pip
+            python3-venv; \
+    rm -rf /var/lib/apt/lists/*; \
+    npm install -g pnpm; \
+    python3 -m venv "$VENV_DIR"; \
+    "$VENV_DIR/bin/pip" install --upgrade pip; \
+    "$VENV_DIR/bin/pip" install piper-tts pathvalidate; \
+    mkdir -p "$MODELS_DIR"; \
+    for v in $VOICES; do \
+      for ext in onnx "onnx.json"; do \
+        f="en_US-${v}-medium.${ext}"; \
+        curl -fsSL "$HF_BASE/$v/medium/$f" -o "$MODELS_DIR/$f"; \
+      done; \
+    done
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Export venv PATH and default model
+ENV PATH="$VENV_DIR/bin:${PATH}" \
+    PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
 
-# Install dependencies using pnpm
+# Install app dependencies as non-root and avoid a separate chown layer
+COPY --chown=node:node package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Copy application files
-COPY index.js ./
+COPY --chown=node:node src ./src
 
-# Create output directory with proper permissions
-RUN mkdir -p /app/output && \
-    chown -R 1000:1000 /app
-
-# Switch to user 1000
-USER 1000:1000
-
-# Default Piper model path (can be overridden)
-ENV PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
-
-# Run the application
+USER node
+EXPOSE 3000
 CMD ["pnpm", "start"]
