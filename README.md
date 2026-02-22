@@ -1,11 +1,11 @@
 # Markdown to Audio Converter
 
-A dockerized Node.js application that converts markdown files to audio files using text-to-speech (TTS). Built with Node.js 24.13, pnpm, and **espeak-ng** for offline, lightweight voice synthesis.
+A dockerized Node.js application that converts markdown files to audio files using text-to-speech (TTS). Built with Node.js 24.13, pnpm, and **Piper TTS** for offline neural voice synthesis.
 
 ## Features
 
 - ✅ Converts markdown to plain text, stripping all formatting
-- ✅ Generates WAV audio files using espeak-ng
+- ✅ Generates WAV audio files using Piper TTS
 - ✅ Runs in Docker container with user ID 1000 for proper file permissions
 - ✅ Mounts host directories so output files are accessible without `chown`
 - ✅ Processes multiple markdown files in batch
@@ -14,9 +14,9 @@ A dockerized Node.js application that converts markdown files to audio files usi
 
 ## Voice Quality
 
-### Current Implementation: espeak-ng
+### Current Implementation: Piper TTS
 
-This project uses **espeak-ng**, a lightweight, open-source speech synthesizer that:
+This project uses **Piper TTS**, a lightweight, open-source neural speech synthesizer that:
 - ✅ Works completely offline
 - ✅ Fast processing (generates audio quickly)
 - ✅ Small Docker image size
@@ -27,7 +27,7 @@ This project uses **espeak-ng**, a lightweight, open-source speech synthesizer t
 
 | TTS Engine | Quality | Speed | Setup | Internet | Cost |
 |------------|---------|-------|-------|----------|------|
-| **espeak-ng** (current) | ⭐⭐ | ⚡⚡⚡⚡ | Easy | Offline | Free |
+| **Piper TTS** (current) | ⭐⭐⭐⭐ | ⚡⚡⚡⚡ | Medium | Offline | Free |
 | Chrome "Listen to this page" | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ | N/A | Online | Free |
 | Google Cloud TTS (Neural2) | ⭐⭐⭐⭐⭐ | ⚡⚡⚡ | Complex | Online | $4-16/1M chars |
 | Piper TTS | ⭐⭐⭐⭐ | ⚡⚡⚡⚡ | Complex | Offline | Free |
@@ -40,7 +40,7 @@ This project uses **espeak-ng**, a lightweight, open-source speech synthesizer t
 
 ```
 .
-├── Dockerfile              # Docker configuration with espeak-ng
+├── Dockerfile              # Docker configuration with Piper TTS
 ├── docker-compose.yml      # Docker Compose configuration
 ├── package.json            # Node.js dependencies (only 'marked')
 ├── index.js                # Main application
@@ -93,7 +93,7 @@ docker run --rm -u 1000:1000 \
 
 1. **Reads markdown files** from the `input/` directory
 2. **Strips markdown formatting** to extract plain text using the `marked` library
-3. **Converts text to speech** using espeak-ng
+3. **Converts text to speech** using Piper TTS
 4. **Saves WAV files** to the `output/` directory
 
 The container runs as user 1000:1000, ensuring that generated files on the host have the correct ownership without requiring `chown`.
@@ -112,7 +112,7 @@ The project includes three sci-fi themed markdown files:
 - **marked**: Markdown parser (only dependency!)
 
 ### System Dependencies (in Docker)
-- **espeak-ng**: Speech synthesizer
+- **piper-tts**: Neural speech synthesizer CLI
 - **pnpm**: Fast, disk-efficient package manager
 
 ## Requirements
@@ -139,27 +139,31 @@ The `:ro` flag on the input mount ensures the container cannot modify your sourc
 
 ### Adjusting Voice Parameters
 
-Edit `index.js` to customize espeak-ng parameters:
+Edit `index.js` to customize Piper model/voice parameters:
 
 ```javascript
 // Current settings:
-// -v en-us: US English voice
-// -s 150: Speaking speed (150 words per minute)
-const command = `espeak-ng -v en-us -s 150 -w "${outputFile}" -f "${tempTextFile}"`;
+// --model: ONNX voice model path
+// --output_file: target WAV file
+const piperArgs = ['--model', modelPath, '--output_file', outputFile];
 ```
 
 **Available voices**: en, en-us, en-gb, en-scottish, and many more languages
 **Speed range**: 80-450 words per minute (default: 175)
 
-### Other espeak-ng Options
+### Other Piper Options
 
-- `-a <0-200>`: Amplitude/volume (default: 100)
-- `-p <0-99>`: Pitch (default: 50)
-- `-g <0-??ms>`: Gap between words in milliseconds
+- `--length_scale <float>`: Speech speed (higher = slower)
+- `--noise_scale <float>`: Variation in generated speech
+- `--noise_w <float>`: Phoneme width/noise shaping
 
-Example for a deeper, slower voice:
+Example for a slightly slower voice:
 ```javascript
-const command = `espeak-ng -v en-us -s 130 -p 30 -w "${outputFile}" -f "${tempTextFile}"`;
+const piperArgs = [
+  '--model', modelPath,
+  '--output_file', outputFile,
+  '--length_scale', '1.1'
+];
 ```
 
 ## Upgrading to Higher Quality TTS
@@ -170,7 +174,7 @@ If you want better voice quality similar to Chrome's "Listen to this page":
 1. Sign up for Google Cloud Platform
 2. Enable Text-to-Speech API
 3. Get API credentials
-4. Replace espeak-ng with `@google-cloud/text-to-speech` npm package
+4. Replace Piper CLI usage with `@google-cloud/text-to-speech` npm package
 5. Use Neural2 voices (e.g., `en-US-Neural2-F`)
 
 ### Option B: Use Piper TTS (Open Source, High Quality)
@@ -182,14 +186,14 @@ If you want better voice quality similar to Chrome's "Listen to this page":
 ## Technical Notes
 
 - **Audio Format**: WAV (uncompressed, high quality)
-- **Sample Rate**: 22050 Hz (espeak-ng default)
+- **Sample Rate**: depends on the selected Piper model
 - **Channels**: Mono
 - **File Sizes**: Approximately 3-4MB per minute of audio
 - **Processing Speed**: Very fast - processes long texts in seconds
 
-## Why espeak-ng?
+## Why Piper TTS?
 
-We chose espeak-ng for this project because:
+We chose Piper TTS for this project because:
 1. **Simplicity**: Single APK package, no complex dependencies
 2. **Reliability**: Mature, stable, well-maintained
 3. **Offline**: No internet connection required

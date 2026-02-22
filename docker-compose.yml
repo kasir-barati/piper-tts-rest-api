@@ -9,13 +9,13 @@ services:
     
   markdown-to-audio:
     build: .
-    container_name: markdown-to-audio
     user: "1000:1000"
     volumes:
       - ./input:/app/input:ro
       - ./output:/app/output
     environment:
       - NODE_ENV=production
+      - PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
     depends_on:
       init:
         condition: service_completed_successfully

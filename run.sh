@@ -9,4 +9,4 @@ docker run --rm -u 1000:1000 -v "$(pwd)/input:/app/input:ro" -v "$(pwd)/output:/
 
 echo ""
 echo "=== Done! ==="
-echo "Check the ./output directory for generated MP3 files."
+echo "Check the ./output directory for generated WAV files."

@@ -1,62 +1,77 @@
 const fs = require('fs');
 const path = require('path');
 const { marked } = require('marked');
-const { execSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
-// Configure marked to output plain text
-const renderer = new marked.Renderer();
-renderer.heading = (text) => text + '\n\n';
-renderer.paragraph = (text) => text + '\n\n';
-renderer.list = (body) => body + '\n';
-renderer.listitem = (text) => '- ' + text + '\n';
-renderer.strong = (text) => text;
-renderer.em = (text) => text;
-renderer.codespan = (text) => text;
-renderer.blockquote = (text) => text;
-renderer.table = (header, body) => header + body;
-renderer.tablerow = (content) => content + '\n';
-renderer.tablecell = (content) => content + ' ';
-renderer.link = (href, title, text) => text;
-renderer.image = () => '';
-renderer.br = () => '\n';
-renderer.hr = () => '\n';
+const DEFAULT_INPUT_DIR = path.join(__dirname, 'input');
+const DEFAULT_OUTPUT_DIR = path.join(__dirname, 'output');
+const PIPER_MODEL_PATH = process.env.PIPER_MODEL || '/app/models/en_US-lessac-medium.onnx';
 
-marked.setOptions({ renderer });
+function configureMarkdownRenderer() {
+  const renderer = new marked.Renderer();
+  renderer.heading = (text) => text + '\n\n';
+  renderer.paragraph = (text) => text + '\n\n';
+  renderer.list = (body) => body + '\n';
+  renderer.listitem = (text) => '- ' + text + '\n';
+  renderer.strong = (text) => text;
+  renderer.em = (text) => text;
+  renderer.codespan = (text) => text;
+  renderer.blockquote = (text) => text;
+  renderer.table = (header, body) => header + body;
+  renderer.tablerow = (content) => content + '\n';
+  renderer.tablecell = (content) => content + ' ';
+  renderer.link = (href, title, text) => text;
+  renderer.image = () => '';
+  renderer.br = () => '\n';
+  renderer.hr = () => '\n';
 
-async function convertMarkdownToAudio(inputFile, outputFile) {
+  marked.setOptions({ renderer });
+}
+
+function ensureDirectoryExists(directoryPath) {
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+  }
+}
+
+function getMarkdownFiles(inputDir) {
+  if (!fs.existsSync(inputDir)) {
+    throw new Error(`Input directory not found: ${inputDir}`);
+  }
+
+  return fs.readdirSync(inputDir).filter((file) => file.endsWith('.md'));
+}
+
+function markdownToPlainText(markdownContent) {
+  const plainText = marked.parse(markdownContent);
+  return plainText.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function runPiperTTS(text, outputFile, modelPath) {
+  const piperArgs = ['--model', modelPath, '--output_file', outputFile];
+  const result = spawnSync('piper', piperArgs, {
+    input: text,
+    encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  if (result.status !== 0) {
+    const stderr = (result.stderr || '').trim();
+    throw new Error(stderr || 'Piper exited with a non-zero status code.');
+  }
+}
+
+async function convertMarkdownToAudio(inputFile, outputFile, modelPath) {
   console.log(`Processing: ${inputFile}`);
   
-  // Read markdown file
   const markdown = fs.readFileSync(inputFile, 'utf8');
-  
-  // Convert markdown to plain text
-  const plainText = marked.parse(markdown);
-  
-  // Clean up extra whitespace
-  const cleanedText = plainText
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const cleanedText = markdownToPlainText(markdown);
   
   console.log(`Text length: ${cleanedText.length} characters`);
   console.log(`Preview: ${cleanedText.substring(0, 100)}...`);
   
   try {
-    // Write text to temp file
-    const tempTextFile = outputFile.replace('.wav', '_temp.txt');
-    fs.writeFileSync(tempTextFile, cleanedText);
-    
-    // Use espeak-ng to generate audio
-    // -v en-us: US English voice
-    // -s 150: Speaking speed (words per minute)
-    // -w: Write to WAV file
-    const command = `espeak-ng -v en-us -s 150 -w "${outputFile}" -f "${tempTextFile}"`;
-    
-    execSync(command, { stdio: 'pipe' });
-    
-    // Clean up temp file
-    if (fs.existsSync(tempTextFile)) {
-      fs.unlinkSync(tempTextFile);
-    }
+    runPiperTTS(cleanedText, outputFile, modelPath);
     
     console.log(`✓ Generated: ${outputFile}\n`);
   } catch (error) {
@@ -64,31 +79,39 @@ async function convertMarkdownToAudio(inputFile, outputFile) {
   }
 }
 
-async function main() {
-  console.log('=== Markdown to Audio Converter (espeak-ng) ===\n');
-  
-  const inputDir = path.join(__dirname, 'input');
-  const outputDir = path.join(__dirname, 'output');
-  
-  // Create output directory if it doesn't exist
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-  
-  // Check if espeak-ng is available
-  console.log('Checking espeak-ng installation...');
+function verifyPiperInstallation(modelPath) {
+  console.log('Checking Piper installation...');
+
   try {
-    execSync('which espeak-ng', { stdio: 'pipe' });
-    console.log('✓ espeak-ng is installed\n');
+    execFileSync('piper', ['--help'], { stdio: 'pipe' });
   } catch (error) {
-    console.error('✗ espeak-ng is not installed');
-    console.error('Please install espeak-ng: apk add espeak-ng (Alpine) or apt install espeak-ng (Debian/Ubuntu)');
+    console.error('✗ Piper is not installed or not available in PATH');
     process.exit(1);
   }
+
+  if (!fs.existsSync(modelPath)) {
+    console.error(`✗ Piper model not found: ${modelPath}`);
+    process.exit(1);
+  }
+
+  console.log('✓ Piper is installed');
+  console.log(`✓ Using model: ${modelPath}\n`);
+}
+
+async function main() {
+  configureMarkdownRenderer();
+
+  console.log('=== Markdown to Audio Converter (Piper TTS) ===\n');
   
-  // Find all markdown files
-  const markdownFiles = fs.readdirSync(inputDir)
-    .filter(file => file.endsWith('.md'));
+  const inputDir = DEFAULT_INPUT_DIR;
+  const outputDir = DEFAULT_OUTPUT_DIR;
+  const modelPath = PIPER_MODEL_PATH;
+  
+  ensureDirectoryExists(outputDir);
+  
+  verifyPiperInstallation(modelPath);
+  
+  const markdownFiles = getMarkdownFiles(inputDir);
   
   if (markdownFiles.length === 0) {
     console.log('No markdown files found in input directory.');
@@ -103,7 +126,7 @@ async function main() {
     const outputPath = path.join(outputDir, file.replace('.md', '.wav'));
     
     try {
-      await convertMarkdownToAudio(inputPath, outputPath);
+      await convertMarkdownToAudio(inputPath, outputPath, modelPath);
     } catch (error) {
       console.error(`Error processing ${file}:`, error.message);
     }
@@ -112,8 +135,7 @@ async function main() {
   console.log('=== Conversion Complete ===');
   console.log(`Output files saved to: ${outputDir}`);
   console.log('Note: Audio files are in WAV format');
-  console.log('\nℹ️  Using espeak-ng (lightweight, offline TTS)');
-  console.log('   For higher quality voices, consider using Piper TTS or cloud services.');
+  console.log('\nℹ️  Using Piper TTS (offline neural voice synthesis)');
 }
 
 // Run the main function
