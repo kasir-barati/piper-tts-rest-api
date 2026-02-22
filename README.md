@@ -2,6 +2,8 @@
 
 Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
+🐳📦🚢 [The image in Docker Hub](https://hub.docker.com/r/9109679196/piper-tts-rest-api).
+
 ## API documentation
 
 ### 1) Health check
