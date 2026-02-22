@@ -1,7 +1,8 @@
 FROM node:24.13-alpine
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install pnpm and espeak-ng for TTS
+RUN npm install -g pnpm && \
+    apk add --no-cache espeak-ng
 
 # Set working directory
 WORKDIR /app

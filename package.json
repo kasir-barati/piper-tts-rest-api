@@ -1,7 +1,7 @@
 {
   "name": "markdown-to-audio",
   "version": "1.0.0",
-  "description": "Convert markdown files to audio using text-to-speech",
+  "description": "Convert markdown files to audio using text-to-speech with Piper",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -10,12 +10,12 @@
     "markdown",
     "audio",
     "tts",
-    "text-to-speech"
+    "text-to-speech",
+    "piper"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "marked": "^11.1.1",
-    "gtts": "^0.2.1"
+    "marked": "^11.1.1"
   }
 }
