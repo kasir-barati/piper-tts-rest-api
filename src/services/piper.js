@@ -22,7 +22,14 @@ export function verifyPiperInstallation(modelPath) {
   if (!existsSync(modelPath)) {
     throw new Error(`Piper model not found: ${modelPath}`);
   }
+}
 
+/**
+ * Ensures ffmpeg is available before serving requests.
+ * @returns {void}
+ * @throws {Error}
+ */
+export function verifyFfmpegInstallation() {
   try {
     execFileSync("ffmpeg", ["-version"], { stdio: "pipe" });
   } catch {
@@ -31,8 +38,7 @@ export function verifyPiperInstallation(modelPath) {
 }
 
 /**
- * Generates MP3 bytes from input text by first synthesizing WAV via Piper
- * and then transcoding to MP3 via ffmpeg.
+ * Generates MP3 bytes from input text by first synthesizing WAV via Piper and then transcoding to MP3 via ffmpeg.
  * @param {string} text
  * @param {string} modelPath
  * @returns {Buffer}

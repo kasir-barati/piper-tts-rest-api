@@ -15,6 +15,9 @@
     "text-to-speech",
     "piper"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Kasir Barati",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.3.0"
+  }
 }

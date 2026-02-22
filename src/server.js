@@ -4,7 +4,10 @@ import { createServer as createHttpServer } from "node:http";
 import { PIPER_MODEL_PATH, PORT } from "./config/index.js";
 import { handleHealth } from "./routes/health.js";
 import { handleSpeak } from "./routes/speak.js";
-import { verifyPiperInstallation } from "./services/piper.js";
+import {
+  verifyFfmpegInstallation,
+  verifyPiperInstallation,
+} from "./services/piper.js";
 import { sendText } from "./utils/http.js";
 
 /**
@@ -38,6 +41,7 @@ function createServer() {
  */
 function bootstrap() {
   verifyPiperInstallation(PIPER_MODEL_PATH);
+  verifyFfmpegInstallation();
 
   const server = createServer();
   server.listen(PORT, () => {
