@@ -40,7 +40,7 @@ ENV PATH="$VENV_DIR/bin:${PATH}" \
 
 # Install app dependencies as non-root and avoid a separate chown layer
 COPY --chown=node:node package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod
 
 COPY --chown=node:node src ./src
 

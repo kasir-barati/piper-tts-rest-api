@@ -11,6 +11,8 @@ curl -f \
 	-X POST http://localhost:3000/speak \
 	-H 'content-type: application/json' \
 	-d '{"text":"Hello from a single command test"}' \
-	-o test.mp3
+	-o hello-world.mp3
 
-ls -lh test.mp3
+ls -lh hello-world.mp3
+
+docker compose down

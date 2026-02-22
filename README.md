@@ -94,6 +94,27 @@ cp .env.example .env
 ./test.sh
 ```
 
+## Automated Docker Hub release
+
+This repository is configured to auto-release Docker images from `Dockerfile` using Conventional Commits.
+
+- Workflow: `.github/workflows/dockerhub-release.yml`.
+- Release config: `.releaserc.json` ([semantic-release](https://www.npmjs.com/package/semantic-release)).
+- Trigger: push to `main`.
+
+How versioning works:
+
+| Commit type(s)                                           | Release behavior       |
+| -------------------------------------------------------- | ---------------------- |
+| `feat:`                                                  | **minor** version bump |
+| `fix:` or `perf:`                                        | **patch** version bump |
+| `chore:`, `docs:`, `style:`, `refactor:`, `test:`, `ci:` | No release by default  |
+
+For each release, the workflow builds from `Dockerfile` and pushes:
+
+- `9109679196/piper-tts-rest-api:<semantic-version>`
+- `9109679196/piper-tts-rest-api:latest`
+
 ## License
 
 MIT

@@ -3,5 +3,10 @@ node_modules/
 *.log
 .git/
 .gitignore
+.github
+.env
+.env.example
+.releaserc.json
 README.md
-run.sh
+test.sh
+compose.yml
