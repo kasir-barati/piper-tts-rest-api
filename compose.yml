@@ -3,8 +3,6 @@ services:
     build: .
     user: "1000:1000"
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
+      - "3000:$PORT"
+    env_file:
+      - .env

@@ -9,7 +9,7 @@ ENV PIP_NO_CACHE_DIR=1 \
     APP_DIR=/app \
     MODELS_DIR=/app/models \
     HF_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US" \
-    VOICES="lessac ryan libritts_r libritts ljspeech amy joe john kathleen kristin"
+    VOICES="lessac ryan libritts_r ljspeech amy joe john kristin"
 
 WORKDIR $APP_DIR
 
@@ -18,8 +18,8 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
             ca-certificates curl ffmpeg \
-            python3
-            python3-pip
+            python3 \
+            python3-pip \
             python3-venv; \
     rm -rf /var/lib/apt/lists/*; \
     npm install -g pnpm; \
@@ -45,5 +45,4 @@ RUN pnpm install --frozen-lockfile
 COPY --chown=node:node src ./src
 
 USER node
-EXPOSE 3000
 CMD ["pnpm", "start"]

@@ -2,14 +2,6 @@
 
 Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
-## What this project does
-
-- Exposes a health check endpoint.
-- Exposes a text-to-speech endpoint.
-- Accepts text from client request body.
-- Returns generated MP3 directly in the HTTP response.
-- Runs fully offline (no cloud TTS dependency).
-
 ## API documentation
 
 ### 1) Health check
@@ -88,41 +80,18 @@ Environment variables:
 - `/app/models/en_US-lessac-medium.onnx`.
 - `/app/models/en_US-ryan-medium.onnx`.
 - `/app/models/en_US-libritts_r-medium.onnx`.
-- `/app/models/en_US-libritts-medium.onnx`.
 - `/app/models/en_US-ljspeech-medium.onnx`.
 - `/app/models/en_US-amy-medium.onnx`.
 - `/app/models/en_US-joe-medium.onnx`.
 - `/app/models/en_US-john-medium.onnx`.
-- `/app/models/en_US-kathleen-medium.onnx`.
 - `/app/models/en_US-kristin-medium.onnx`.
 
-## Run with Docker Compose
+## Test Locally
 
 ```bash
-docker compose up --build
-```
+cp .env.example .env
 
-Service listens on `http://localhost:3000`.
-
-## Current structure
-
-```text
-.
-├── Dockerfile
-├── docker-compose.yml
-├── package.json
-└── src
-    ├── server.js
-    ├── config
-    │   └── index.js
-    ├── routes
-    │   ├── health.js
-    │   └── speak.js
-    ├── services
-    │   └── piper.js
-    └── utils
-        ├── body.js
-        └── http.js
+./test.sh
 ```
 
 ## License
