@@ -13,6 +13,12 @@ curl -f \
 	-d '{"text":"Hello from a single command test"}' \
 	-o hello-world.mp3
 
+# curl -f \
+# 	-X POST http://localhost:3000/speak \
+# 	-H 'content-type: text/plain; charset=utf-8' \
+# 	--data-binary @input/half-maximum-allowed-size.txt \
+# 	-o hello-world.mp3
+
 ls -lh hello-world.mp3
 
 docker compose down

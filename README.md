@@ -38,6 +38,23 @@ Success response:
   - `X-Output-File: <generated>.mp3`
 - Body: MP3 binary
 
+> [!NOTE]
+>
+> The maximum allowed text size is more than enough for 90% of scenarios (learn more [here](./src/config/index.js)), and keep in mind that if for any reason you try to upload even half of the allowed maximum size you'd have to wait for roughly 15 minutes:
+>
+> ```bash
+> wc input/half-maximum-allowed-size.txt
+> # 3507     81663 492149 input/half-maximum-allowed-size.txt
+> # ⬆️       ⬆️    ⬆️
+> # newline, word, byte counts
+> ls -lh input/half-maximum-allowed-size.txt 
+> # -rw-rw-r-- 1 kasir kasir 481K Feb 23 00:20 input/half-maximum-allowed-size.txt
+>   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+>                                  Dload  Upload   Total   Spent    Left  Speed
+> 100  225M  100  224M  100  480k   252k    540  0:15:11  0:15:11 --:--:-- 53.0M
+> -rw-rw-r-- 1 mjb mjb 225M Feb 23 01:14 hello-world.mp3
+> ```
+
 Validation and errors:
 
 - `400` for invalid JSON or missing/empty text
