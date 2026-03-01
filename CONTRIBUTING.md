@@ -7,5 +7,5 @@ To release a new version your [commit message should follow these rules](https:/
 > `feat!: some message` won't release a new major version. So make sure to use the correct commit message:
 >
 > ```cmd
-> git commit -m "feat: some message" -m "BREAKING CHANGE: extra details"
+> git commit -m "perf: some message" -m "BREAKING CHANGE: extra details"
 > ```
