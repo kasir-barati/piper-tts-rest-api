@@ -154,7 +154,3 @@ For each release, the workflow builds from `Dockerfile` and pushes:
 
 - `9109679196/piper-tts-rest-api:<semantic-version>`
 - `9109679196/piper-tts-rest-api:latest`
-
-## License
-
-MIT
