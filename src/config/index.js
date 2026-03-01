@@ -1,16 +1,22 @@
 // @ts-check
 
-/**
- * Application configuration values sourced from environment variables.
- */
-export const PORT = Number.parseInt(process.env.PORT ?? "3000", 10);
+// Application configuration values sourced from environment variables.
 
-/** @type {string} */
+export const PORT = Number.parseInt(process.env.PORT ?? "3000", 10);
+/**
+ * @description Maximum number of concurrent text-to-speech requests
+ * @default 10
+ */
+export const MAX_CONCURRENCY = Number.parseInt(
+  process.env.MAX_CONCURRENCY ?? "10",
+  10,
+);
+/** @description Path to the Piper model file */
 export const PIPER_MODEL_PATH =
   process.env.PIPER_MODEL ?? "/app/models/en_US-lessac-medium.onnx";
 
 /**
  * @description Maximum allowed request body size is 1MB, which is sufficient for at least ~150000 words which is more than enough for typical use cases.
- * @type {number}
+ * @default 1_000_000
  */
 export const MAX_BODY_SIZE_BYTES = 1_000_000;

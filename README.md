@@ -6,37 +6,80 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
 ## API documentation
 
-### 1) Health check
+<table>
+  <thead>
+    <tr>
+      <th>Endpoint</th>
+      <th>Request (Body formats)</th>
+      <th>Success response</th>
+      <th>Typical headers</th>
+      <th>Body</th>
+      <th>Examples</th>
+      <th>Validation / Errors</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>GET /health</code></td>
+      <td>—</td>
+      <td>
+        Status: <code>200</code><br>
+        Content-Type: <code>text/plain</code>
+      </td>
+      <td>—</td>
+      <td><code>OK</code></td>
+      <td>
+        <pre><code>curl -i http://localhost:3000/health</code></pre>
+      </td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>POST /speak</code></td>
+      <td>
+        <ul>
+          <li><code>application/json</code> with <code>{ "text": "..." }</code></li>
+          <li><code>text/plain</code> with raw text body</li>
+        </ul>
+      </td>
+      <td>
+        Status: <code>200</code> (streaming)<br>
+        Content-Type: <code>audio/mpeg</code>
+      </td>
+      <td>
+        <ul>
+          <li><code>Content-Disposition: inline; filename="&lt;generated&gt;.mp3"</code></li>
+          <li><code>Cache-Control: no-store</code></li>
+          <li>(HTTP/1.1 only) <code>Transfer-Encoding: chunked</code></li>
+          <li>No <code>Content-Length</code>; read until stream ends</li>
+        </ul>
+      </td>
+      <td>MP3 audio stream (bytes sent progressively)</td>
+      <td>
+        <pre><code># JSON input
+curl -X POST http://localhost:3000/speak \
+  -H 'content-type: application/json' \
+  -d '{"text":"Hello from Piper API"}' \
+  -o output.mp3</pre></code><pre><code>
+# Plain text input
+curl -X POST http://localhost:3000/speak \
+  -H 'content-type: text/plain' \
+  --data 'Hello from plain text body' \
+  -o output.mp3</code></pre>
+      </td>
+      <td>
+        <ul>
+          <li><code>400</code> invalid JSON or missing/empty text</li>>
+          <li><code>413</code> payload too large</li>
+          <li><code>500</code> synthesis/transcoding failures</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-- Method: `GET`
-- Path: `/health`
-- Success response:
-  - Status: `200`
-  - Content-Type: `text/plain`
-  - Body: `OK`
-
-Example:
-
-```bash
-curl -i http://localhost:3000/health
-```
-
-### 2) Text to speech
-
-- Method: `POST`
-- Path: `/speak`
-- Supported body formats:
-  - `application/json` with `{ "text": "..." }`
-  - `text/plain` with raw text body
-
-Success response:
-
-- Status: `200`
-- Content-Type: `audio/mpeg`
-- Headers include:
-  - `Content-Disposition: attachment; filename="<generated>.mp3"`
-  - `X-Output-File: <generated>.mp3`
-- Body: MP3 binary
+> [!TIP]
+>
+> Here we will spawn a new child process for each request to the speak API, what that entails is loading the model in memory again and again. It can be said that it is **NOT a good idea if you need lowest latency / highest throughput**.
 
 > [!NOTE]
 >
@@ -47,35 +90,13 @@ Success response:
 > # 3507     81663 492149 input/half-maximum-allowed-size.txt
 > # ⬆️       ⬆️    ⬆️
 > # newline, word, byte counts
-> ls -lh input/half-maximum-allowed-size.txt 
+> ls -lh input/half-maximum-allowed-size.txt
 > # -rw-rw-r-- 1 kasir kasir 481K Feb 23 00:20 input/half-maximum-allowed-size.txt
 >   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
 >                                  Dload  Upload   Total   Spent    Left  Speed
 > 100  225M  100  224M  100  480k   252k    540  0:15:11  0:15:11 --:--:-- 53.0M
 > -rw-rw-r-- 1 mjb mjb 225M Feb 23 01:14 hello-world.mp3
 > ```
-
-Validation and errors:
-
-- `400` for invalid JSON or missing/empty text
-- `413` when payload exceeds max allowed size
-- `500` for synthesis/transcoding failures
-
-Examples:
-
-```bash
-# JSON input
-curl -X POST http://localhost:3000/speak \
-  -H 'content-type: application/json' \
-  -d '{"text":"Hello from Piper API"}' \
-  -o output.mp3
-
-# Plain text input
-curl -X POST http://localhost:3000/speak \
-  -H 'content-type: text/plain' \
-  --data 'Hello from plain text body' \
-  -o output.mp3
-```
 
 ## Piper TTS notes
 
