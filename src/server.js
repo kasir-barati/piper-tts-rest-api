@@ -27,9 +27,9 @@ export const logger = createLogger(LOGGING_LEVEL, LOGGING_MODE, SERVICE_NAME);
  */
 function createServer() {
   /**
-   * 
-   * @param {import('node:http').IncomingMessage} req 
-   * @param {import('node:http').ServerResponse} res 
+   *
+   * @param {import('node:http').IncomingMessage} req
+   * @param {import('node:http').ServerResponse} res
    */
   const handler = async (req, res) => {
     if (!req.url || !req.method) {
