@@ -10,6 +10,8 @@ This project includes a lightweight logging middleware that logs all incoming HT
 
 <details><summary><code>LOGGING_MODE</code></summary>
 
+Available modes:
+
 - **`PLAIN_TEXT`** (default): Human-readable format
   ```bash
   [2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] (correlationId: 2b20be5b-0028-4eec-9bfc-02aff54d006e) Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
@@ -177,24 +179,3 @@ cp .env.example .env
 
 ./test.sh
 ```
-
-## Automated Docker Hub release
-
-This repository is configured to auto-release Docker images from `Dockerfile` using Conventional Commits.
-
-- Workflow: `.github/workflows/dockerhub-release.yml`.
-- Release config: `.releaserc.json` ([semantic-release](https://www.npmjs.com/package/semantic-release)).
-- Trigger: push to `main`.
-
-How versioning works:
-
-| Commit type(s)                                           | Release behavior       |
-| -------------------------------------------------------- | ---------------------- |
-| `feat:`                                                  | **minor** version bump |
-| `fix:` or `perf:`                                        | **patch** version bump |
-| `chore:`, `docs:`, `style:`, `refactor:`, `test:`, `ci:` | No release by default  |
-
-For each release, the workflow builds from `Dockerfile` and pushes:
-
-- `9109679196/piper-tts-rest-api:<semantic-version>`
-- `9109679196/piper-tts-rest-api:latest`
