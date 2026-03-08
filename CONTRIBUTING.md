@@ -1,3 +1,11 @@
+# Test Locally
+
+```bash
+cp .env.example .env
+
+./test.sh
+```
+
 # Bump Version
 
 To release a new version your [commit message should follow these rules](https://github.com/semantic-release/semantic-release?tab=readme-ov-file#commit-message-format) which is the default behavior of `semantic-release`.
@@ -30,4 +38,3 @@ For each release, the workflow builds from `Dockerfile` and pushes:
 
 - `9109679196/piper-tts-rest-api:<semantic-version>`
 - `9109679196/piper-tts-rest-api:latest`
-
