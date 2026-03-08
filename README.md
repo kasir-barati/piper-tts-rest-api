@@ -4,7 +4,50 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
 🐳📦🚢 [The image in Docker Hub](https://hub.docker.com/r/9109679196/piper-tts-rest-api).
 
+## Logging System
+
+This project includes a lightweight logging middleware that logs all incoming HTTP requests and their responses. You can configure it through environment variables:
+
+<details><summary><code>LOGGING_MODE</code></summary>
+
+- **`PLAIN_TEXT`** (default): Human-readable format
+  ```bash
+  [2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] (correlationId: 2b20be5b-0028-4eec-9bfc-02aff54d006e) Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
+  ```
+- **`JSON`**: Structured JSON format (ideal for log aggregation tools)
+  ```json
+  {"timestamp":"2026-03-08T00:17:21.123Z","level":"info","service":"piper-tts-rest-api","correlationId":"65219ad1-21a6-44e5-a3d4-9bfb070d7566","context":"HttpMiddleware","message":"Incoming POST /speak","method":"POST","url":"/speak","headers":{...}}
+  ```
+
+</details>
+<details><summary><code>LOGGING_LEVEL</code></summary>
+
+Available levels (from least to most verbose):
+
+- **`error`**: Only error messages
+- **`warn`**: Warnings and errors
+- **`info`** (default): Informational messages, warnings, and errors
+- **`debug`**: Debug information and all above
+- **`verbose`**: All logs including verbose details
+
+</details>
+<details><summary><code>SERVICE_NAME</code></summary>
+
+- **Default**: `piper-tts-rest-api`
+- The name of the service shown in the logs.
+
+</details>
+
+> [!TIP]
+>
+> Use this logging for monitoring and KPI (Key Performance Indicator) purposes.
+
 ## API documentation
+
+For better tracking you can add a correlation ID to your requests:
+
+1. **If the client sends a `correlation-id` header**, it will be used and echoed back in the response.
+2. **If no `correlation-id` header is present**, the middleware generates a UUID and adds it to both the request and response headers.
 
 <table>
   <thead>
@@ -58,6 +101,7 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
         <pre><code># JSON input
 curl -X POST http://localhost:3000/speak \
   -H 'content-type: application/json' \
+  -H "correlation-id: 4484f9a3-7edb-492e-b815-52893ecb8eae" \
   -d '{"text":"Hello from Piper API"}' \
   -o output.mp3</pre></code><pre><code>
 # Plain text input

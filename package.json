@@ -1,5 +1,5 @@
 {
-  "name": "markdown-to-audio",
+  "name": "piper-tts-rest-api",
   "version": "2.0.0",
   "description": "Convert markdown files to audio using text-to-speech with Piper",
   "type": "module",
