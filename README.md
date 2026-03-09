@@ -6,7 +6,7 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
 > [!TIP]
 >
-> This service can handle multiple requests sent to it simultaneously, but you might want to keep in mind that axios or any other library might timeout because of how long it is gonna take it to generate and stream back the response.
+> This service can handle multiple requests sent to it simultaneously, but you might want to keep in mind that axios or any other library might timeout because of how long it is gonna take it to generate and stream back the response. And You can configure how many concurrent requests your service should be able to serve through `MAX_CONCURRENCY`.
 
 ## Logging System
 
