@@ -4,6 +4,10 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
 🐳📦🚢 [The image in Docker Hub](https://hub.docker.com/r/9109679196/piper-tts-rest-api).
 
+> [!TIP]
+>
+> This service can handle multiple requests sent to it simultaneously, but you might want to keep in mind that axios or any other library might timeout because of how long it is gonna take it to generate and stream back the response.
+
 ## Logging System
 
 This project includes a lightweight logging middleware that logs all incoming HTTP requests and their responses. You can configure it through environment variables:

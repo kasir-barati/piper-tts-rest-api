@@ -6,6 +6,14 @@ cp .env.example .env
 ./test.sh
 ```
 
+## Load Testing
+
+```bash
+cp .env.example .env
+
+python3 load_test.py --help
+```
+
 # Bump Version
 
 To release a new version your [commit message should follow these rules](https://github.com/semantic-release/semantic-release?tab=readme-ov-file#commit-message-format) which is the default behavior of `semantic-release`.
