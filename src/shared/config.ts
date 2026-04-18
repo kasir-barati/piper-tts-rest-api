@@ -1,4 +1,4 @@
-import type { LogLevel, LogMode } from "../utils/index.js";
+import type { LogLevel, LogMode } from "./utils/index.js";
 
 /**
  * Application configuration values sourced from environment variables.

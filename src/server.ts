@@ -5,14 +5,13 @@ import {
   type ServerResponse,
 } from "node:http";
 
-import { config } from "./config/index.js";
 import { withLogging } from "./middlewares/index.js";
 import { handleHealth, handleSpeak } from "./routes/index.js";
 import {
   verifyFfmpegInstallation,
   verifyPiperInstallation,
 } from "./services/index.js";
-import { createLogger, sendText } from "./utils/index.js";
+import { config, createLogger, sendText } from "./shared/index.js";
 
 // Create logger instance
 export const logger = createLogger(

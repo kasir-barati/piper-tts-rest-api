@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 
-import { sendText } from "../utils/index.js";
+import { sendText } from "../shared/index.js";
 
 /**
  * Handles health-check endpoint.

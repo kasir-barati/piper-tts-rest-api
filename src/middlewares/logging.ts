@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { getCorrelationId, type Logger } from "../utils/index.js";
+import { getCorrelationId, type Logger } from "../shared/index.js";
 
 type RequestHandler = (
   req: IncomingMessage,

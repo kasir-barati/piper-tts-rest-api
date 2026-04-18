@@ -2,17 +2,17 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { randomUUID } from "node:crypto";
 
-import { config } from "../config/index.js";
 import {
   spawnFfmpegMp3FromWav,
   spawnPiperWavStdout,
 } from "../services/index.js";
 import {
+  config,
   extractTextFromRequestBody,
   readRawBody,
   Semaphore,
   sendJson,
-} from "../utils/index.js";
+} from "../shared/index.js";
 
 const speakSemaphore = new Semaphore(config.maxConcurrency);
 
