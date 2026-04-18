@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+rm -f hello-world.mp3
+
 docker compose up --build -d
 
 # Wait for API readiness
