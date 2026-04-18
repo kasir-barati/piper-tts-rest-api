@@ -1,18 +1,17 @@
-// @ts-check
+import type { IncomingMessage } from "node:http";
 
 /**
  * Reads the raw request body up to a maximum size.
- * @param {import('node:http').IncomingMessage} req
- * @param {number} maxBodySizeBytes
- * @returns {Promise<string>}
  */
-export function readRawBody(req, maxBodySizeBytes) {
+export function readRawBody(
+  req: IncomingMessage,
+  maxBodySizeBytes: number,
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    /** @type {Buffer[]} */
-    const chunks = [];
+    const chunks: Buffer[] = [];
     let size = 0;
 
-    req.on("data", (chunk) => {
+    req.on("data", (chunk: Buffer) => {
       size += chunk.length;
       if (size > maxBodySizeBytes) {
         reject(new Error("Request body too large"));
@@ -33,17 +32,17 @@ export function readRawBody(req, maxBodySizeBytes) {
 /**
  * Extracts speakable text from request payload.
  * Accepts JSON (`{ "text": "..." }`) or raw plain text.
- * @param {string} rawBody
- * @param {string | undefined} contentType
- * @returns {string}
  */
-export function extractTextFromRequestBody(rawBody, contentType) {
+export function extractTextFromRequestBody(
+  rawBody: string,
+  contentType: string | undefined,
+): string {
   if (!rawBody || !rawBody.trim()) {
     return "";
   }
 
   if ((contentType ?? "").includes("application/json")) {
-    const parsed = JSON.parse(rawBody);
+    const parsed = JSON.parse(rawBody) as { text?: unknown };
     return typeof parsed.text === "string" ? parsed.text.trim() : "";
   }
 

@@ -13,6 +13,9 @@ importers:
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
   "@types/node@24.10.13":
@@ -29,6 +32,14 @@ packages:
     engines: { node: ">=14" }
     hasBin: true
 
+  typescript@6.0.3:
+    resolution:
+      {
+        integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==,
+      }
+    engines: { node: ">=14.17" }
+    hasBin: true
+
   undici-types@7.16.0:
     resolution:
       {
@@ -41,5 +52,7 @@ snapshots:
       undici-types: 7.16.0
 
   prettier@3.8.1: {}
+
+  typescript@6.0.3: {}
 
   undici-types@7.16.0: {}

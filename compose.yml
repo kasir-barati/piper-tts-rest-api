@@ -1,5 +1,8 @@
 services:
   piper-tts:
+    # image: 9109679196/piper-tts-rest-api:2.1.0
+    # environment:
+    #   LOGGING_MODE: "JSON"
     build: .
     user: "1000:1000"
     ports:

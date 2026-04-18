@@ -39,10 +39,11 @@ ENV PATH="$VENV_DIR/bin:${PATH}" \
     PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
 
 # Install app dependencies as non-root and avoid a separate chown layer
-COPY --chown=node:node package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+COPY --chown=node:node package.json pnpm-lock.yaml tsconfig.json ./
+RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node src ./src
+RUN pnpm build && pnpm prune --prod
 
 USER node
 CMD ["pnpm", "start"]

@@ -1,13 +1,17 @@
-// @ts-check
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { getCorrelationId, type Logger } from "../utils/index.js";
 
-import { getCorrelationId } from "../utils/get-correlation-id.js";
+type RequestHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+) => void | Promise<void>;
 
 /**
  * Creates a logging middleware that logs incoming requests and responses.
- * @param {import('../utils/logger.js').Logger} logger - The logger instance
- * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, next: Function) => void}
  */
-export function createLoggingMiddleware(logger) {
+export function createLoggingMiddleware(
+  logger: Logger,
+): (req: IncomingMessage, res: ServerResponse, next: () => void) => void {
   return (req, res, next) => {
     const correlationId = getCorrelationId(req);
 
@@ -28,8 +32,7 @@ export function createLoggingMiddleware(logger) {
 
     // Intercept response finish to log completion
     const originalEnd = res.end;
-    // @ts-expect-error - happens because the `res.end` method has multiple overloads
-    res.end = function (...args) {
+    res.end = function (this: ServerResponse, ...args: unknown[]) {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
 
@@ -42,21 +45,20 @@ export function createLoggingMiddleware(logger) {
         duration,
       });
 
-      // @ts-expect-error - Call the original end method
-      return originalEnd.apply(res, args);
-    };
+      return (originalEnd as Function).apply(this, args);
+    } as ServerResponse["end"];
 
     next();
   };
 }
 
 /**
- * @description Wraps a request handler to include logging middleware functionality.
- * @param {import('../utils/logger.js').Logger} logger - The logger instance
- * @param {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void | Promise<void>} handler - The request handler
- * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void | Promise<void>}
+ * Wraps a request handler to include logging middleware functionality.
  */
-export function withLogging(logger, handler) {
+export function withLogging(
+  logger: Logger,
+  handler: RequestHandler,
+): RequestHandler {
   return (req, res) => {
     const correlationId = getCorrelationId(req);
 
@@ -77,8 +79,7 @@ export function withLogging(logger, handler) {
 
     // Intercept response finish to log completion
     const originalEnd = res.end;
-    // @ts-expect-error - happens because the `res.end` method has multiple overloads
-    res.end = function (...args) {
+    res.end = function (this: ServerResponse, ...args: unknown[]) {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
 
@@ -91,9 +92,8 @@ export function withLogging(logger, handler) {
         duration,
       });
 
-      // @ts-expect-error - Call the original end method
-      return originalEnd.apply(res, args);
-    };
+      return (originalEnd as Function).apply(this, args);
+    } as ServerResponse["end"];
 
     // Call the actual handler
     return handler(req, res);

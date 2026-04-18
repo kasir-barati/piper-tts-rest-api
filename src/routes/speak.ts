@@ -1,31 +1,29 @@
-// @ts-check
-
 import { randomUUID } from "node:crypto";
-import {
-  MAX_BODY_SIZE_BYTES,
-  MAX_CONCURRENCY,
-  PIPER_MODEL_PATH,
-} from "../config/index.js";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { config } from "../config/index.js";
 import {
   spawnFfmpegMp3FromWav,
   spawnPiperWavStdout,
-} from "../services/piper.js";
-import { extractTextFromRequestBody, readRawBody } from "../utils/body.js";
-import { sendJson } from "../utils/http.js";
-import { Semaphore } from "../utils/semaphore.js";
+} from "../services/index.js";
+import {
+  extractTextFromRequestBody,
+  readRawBody,
+  sendJson,
+  Semaphore,
+} from "../utils/index.js";
 
-const speakSemaphore = new Semaphore(MAX_CONCURRENCY);
+const speakSemaphore = new Semaphore(config.maxConcurrency);
 
 /**
  * Handles text-to-speech API endpoint.
- * @param {import('node:http').IncomingMessage} req
- * @param {import('node:http').ServerResponse} res
- * @returns {Promise<void>}
  */
-export async function handleSpeak(req, res) {
+export async function handleSpeak(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
   speakSemaphore.run(async () => {
     try {
-      const rawBody = await readRawBody(req, MAX_BODY_SIZE_BYTES);
+      const rawBody = await readRawBody(req, config.maxBodySizeBytes);
       const text = extractTextFromRequestBody(
         rawBody,
         req.headers["content-type"],
@@ -47,24 +45,29 @@ export async function handleSpeak(req, res) {
         "Cache-Control": "no-store",
       });
 
-      const piper = spawnPiperWavStdout(text, PIPER_MODEL_PATH);
+      const piper = spawnPiperWavStdout(text, config.piperModelPath);
       const ffmpeg = spawnFfmpegMp3FromWav();
 
       // Pipe audio
       piper.stdout.pipe(ffmpeg.stdin);
       ffmpeg.stdout.pipe(res);
 
-      /** @type {(msg: string) => void} */
-      const fail = (msg) => {
+      const fail = (msg: string): void => {
         try {
           res.destroy(new Error(msg));
-        } catch {}
+        } catch {
+          /* ignore */
+        }
         try {
           piper.kill("SIGKILL");
-        } catch {}
+        } catch {
+          /* ignore */
+        }
         try {
           ffmpeg.kill("SIGKILL");
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       };
 
       // Chained handlers
@@ -93,20 +96,24 @@ export async function handleSpeak(req, res) {
           }
         });
 
-      piper.stderr.on("data", (_buf) => {
+      piper.stderr.on("data", (_buf: Buffer) => {
         /* optional logs/progress */
       });
-      ffmpeg.stderr.on("data", (_buf) => {
+      ffmpeg.stderr.on("data", (_buf: Buffer) => {
         /* optional logs */
       });
 
-      const abort = () => {
+      const abort = (): void => {
         try {
           piper.kill("SIGKILL");
-        } catch {}
+        } catch {
+          /* ignore */
+        }
         try {
           ffmpeg.kill("SIGKILL");
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       };
 
       req.on("aborted", abort);

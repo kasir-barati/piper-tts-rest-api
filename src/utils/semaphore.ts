@@ -1,17 +1,17 @@
-// @ts-check
-
 export class Semaphore {
-  /** @param {number} max */
-  constructor(max) {
+  private max: number;
+  private count: number;
+  private queue: Array<() => void>;
+
+  constructor(max: number) {
     this.max = max;
     this.count = 0;
-    /** @type {Array<(value?: void) => void>} */
     this.queue = [];
   }
-  /** @template T @param {() => Promise<T>} fn */
-  async run(fn) {
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
     if (this.count >= this.max) {
-      await new Promise((resolve) => this.queue.push(resolve));
+      await new Promise<void>((resolve) => this.queue.push(resolve));
     }
     this.count++;
     try {
