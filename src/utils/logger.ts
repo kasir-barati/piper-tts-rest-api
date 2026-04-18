@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export type LogLevel = "error" | "warn" | "info" | "debug" | "verbose";
 export type LogMode = "PLAIN_TEXT" | "JSON";
 export interface LogMetadata {

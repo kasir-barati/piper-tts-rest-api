@@ -1,5 +1,6 @@
-import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
+
+import { randomUUID } from "node:crypto";
 
 export function getCorrelationId(req: IncomingMessage): string {
   const headerValue = req.headers["correlation-id"];

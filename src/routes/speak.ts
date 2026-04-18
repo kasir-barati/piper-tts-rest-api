@@ -1,5 +1,7 @@
-import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
+
+import { randomUUID } from "node:crypto";
+
 import { config } from "../config/index.js";
 import {
   spawnFfmpegMp3FromWav,
@@ -8,8 +10,8 @@ import {
 import {
   extractTextFromRequestBody,
   readRawBody,
-  sendJson,
   Semaphore,
+  sendJson,
 } from "../utils/index.js";
 
 const speakSemaphore = new Semaphore(config.maxConcurrency);

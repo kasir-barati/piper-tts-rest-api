@@ -1,7 +1,7 @@
 export {
-  verifyPiperInstallation,
-  verifyFfmpegInstallation,
-  synthesizeTextToMp3Buffer,
-  spawnPiperWavStdout,
   spawnFfmpegMp3FromWav,
+  spawnPiperWavStdout,
+  synthesizeTextToMp3Buffer,
+  verifyFfmpegInstallation,
+  verifyPiperInstallation,
 } from "./piper.js";

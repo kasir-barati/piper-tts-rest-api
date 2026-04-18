@@ -1,4 +1,10 @@
-import { createServer as createHttpServer, type Server } from "node:http";
+import {
+  createServer as createHttpServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
+
 import { config } from "./config/index.js";
 import { withLogging } from "./middlewares/index.js";
 import { handleHealth, handleSpeak } from "./routes/index.js";
@@ -7,7 +13,6 @@ import {
   verifyPiperInstallation,
 } from "./services/index.js";
 import { createLogger, sendText } from "./utils/index.js";
-import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Create logger instance
 export const logger = createLogger(

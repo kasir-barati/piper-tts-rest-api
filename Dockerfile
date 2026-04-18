@@ -38,6 +38,9 @@ RUN set -eux; \
 ENV PATH="$VENV_DIR/bin:${PATH}" \
     PIPER_MODEL=/app/models/en_US-lessac-medium.onnx
 
+# Disable husky in Docker builds
+ENV HUSKY=0
+
 # Install app dependencies as non-root and avoid a separate chown layer
 COPY --chown=node:node package.json pnpm-lock.yaml tsconfig.json ./
 RUN pnpm install --frozen-lockfile

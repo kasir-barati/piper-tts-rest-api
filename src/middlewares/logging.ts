@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+
 import { getCorrelationId, type Logger } from "../utils/index.js";
 
 type RequestHandler = (
@@ -45,7 +46,10 @@ export function createLoggingMiddleware(
         duration,
       });
 
-      return (originalEnd as Function).apply(this, args);
+      return (originalEnd as (...args: unknown[]) => ServerResponse).apply(
+        this,
+        args,
+      );
     } as ServerResponse["end"];
 
     next();
@@ -92,7 +96,10 @@ export function withLogging(
         duration,
       });
 
-      return (originalEnd as Function).apply(this, args);
+      return (originalEnd as (...args: unknown[]) => ServerResponse).apply(
+        this,
+        args,
+      );
     } as ServerResponse["end"];
 
     // Call the actual handler
