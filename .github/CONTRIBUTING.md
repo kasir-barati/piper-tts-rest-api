@@ -1,20 +1,23 @@
-# Test Locally
+## 🚀 Quick Start
 
-```bash
-cp .env.example .env
-
-./test.sh
+```shell
+pnpm run init
 ```
 
-## Load Testing
+### Test Locally
 
 ```bash
-cp .env.example .env
-
-python3 load_test.py --help
+./test.sh # Single request test
 ```
 
-# Bump Version
+To test the service under load:
+
+```shell
+docker compose up --build -d
+python3 load_test.py --help # Load Testing
+```
+
+## Bump Version
 
 To release a new version your [commit message should follow these rules](https://github.com/semantic-release/semantic-release?tab=readme-ov-file#commit-message-format) which is the default behavior of `semantic-release`.
 
@@ -26,7 +29,7 @@ To release a new version your [commit message should follow these rules](https:/
 > git commit -m "perf: some message" -m "BREAKING CHANGE: extra details"
 > ```
 
-## Automated Docker Hub release
+### Automated Docker Hub release
 
 This repository is configured to auto-release Docker images from `Dockerfile` using Conventional Commits.
 

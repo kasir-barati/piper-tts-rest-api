@@ -23,6 +23,34 @@ export function verifyPiperInstallation(modelPath: string): void {
   if (!existsSync(modelPath)) {
     throw new Error(`Piper model not found: ${modelPath}`);
   }
+
+  if (!existsSync(`${modelPath}.json`)) {
+    throw new Error(`Piper model config not found: ${modelPath}.json`);
+  }
+}
+
+/**
+ * @summary Reads the Piper model sample rate from its sidecar config.
+ * @description Piper ships a JSON sidecar next to each model (`<model>.onnx.json`) with the audio settings the voice was trained for. We read `audio.sample_rate` from that file because:
+ *
+ * - Piper's `--output-raw` mode writes headerless PCM, so the stream does not carry its own sample rate [ref](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/CLI.md).
+ * - `ffmpeg` requires raw audio parameters to be supplied explicitly. In this pipeline that means `-f s16le` for the PCM format and `-ar` for the sample rate. Learn more [here](https://ffmpeg.org/ffmpeg-formats.html#Raw-PCM-muxers) and [here](https://ffmpeg.org/ffmpeg.html#Audio-Options).
+ *
+ * Read once at startup and cache the result; the model config is effectively immutable for the lifetime of the process.
+ */
+export function readPiperModelSampleRate(modelPath: string): number {
+  const configPath = `${modelPath}.json`;
+  const raw = readFileSync(configPath, "utf8");
+  const parsed = JSON.parse(raw) as { audio?: { sample_rate?: unknown } };
+  const rate = parsed.audio?.sample_rate;
+
+  if (typeof rate !== "number" || !Number.isInteger(rate) || rate <= 0) {
+    throw new Error(
+      `Invalid or missing audio.sample_rate in ${configPath} (got: ${String(rate)})`,
+    );
+  }
+
+  return rate;
 }
 
 /**
@@ -111,13 +139,24 @@ function assertStreams(
 }
 
 /**
- * Spawn Piper and emit WAV to stdout (headered stream).
+ * @description Spawn Piper and emit raw 16-bit signed little-endian PCM samples to stdout (no WAV header). The piper-rewrite (piper-tts >= 1.3.0, the `OHF-voice/piper1-gpl` Python project) does not honour `--output_file -` as a stdout sentinel — it silently produces zero bytes. `--output-raw` is the new way to stream synthesis output.
+ *
+ * The downstream ffmpeg invocation must be told the sample rate explicitly (the WAV header is gone), see `spawnFfmpegMp3FromPcm`.
+ *
+ * Performance note: every call spawns a fresh `piper` process which reloads the ONNX model (~61 MB for medium voices) and initialises the ONNX runtime before synthesis can start. This costs ~1.7–2 s per request for the bundled voices, regardless of input length.
+ *
+ * This is a deliberate design choice, not an oversight to be "fixed":
+ * - The piper CLI has no daemon mode; a process pool would not help because every new process pays the same load cost.
+ * - The only way to amortise the model-load cost is to drive piper from its Python library with a single long-lived model handle, which means abandoning the CLI wrapper entirely.
+ * - The per-request process boundary makes cancellation and resource cleanup trivial — `SIGKILL` reclaims everything in one step. A shared in-memory model would require careful thread/queue management and per-job cancellation hooks inside the Python runtime.
+ *
+ * If you arrive here intending to add a process pool, please measure cold-start cost first and update this comment with your findings.
  */
-export function spawnPiperWavStdout(
+export function spawnPiperPcmStdout(
   text: string,
   modelPath: string,
 ): ChildProcessWithoutNullStreams {
-  const args = ["--model", modelPath, "--output_file", "-"]; // WAV on stdout
+  const args = ["--model", modelPath, "--output-raw"];
   const childProcess = spawn("piper", args, {
     stdio: ["pipe", "pipe", "pipe"],
   });
@@ -130,21 +169,31 @@ export function spawnPiperWavStdout(
 }
 
 /**
- * Spawn ffmpeg to read WAV from stdin and encode MP3 to stdout.
+ * Spawn ffmpeg to read raw 16-bit signed little-endian mono PCM from
+ * stdin (at `sampleRate` Hz) and encode MP3 to stdout. Pairs with
+ * `spawnPiperPcmStdout`.
  */
-export function spawnFfmpegMp3FromWav(): ChildProcessWithoutNullStreams {
+export function spawnFfmpegMp3FromPcm(
+  sampleRate: number,
+): ChildProcessWithoutNullStreams {
   const args = [
     "-loglevel",
     "error",
+    "-f",
+    "s16le", // raw, 16-bit signed little-endian samples
+    "-ar",
+    String(sampleRate), // sample rate from the Piper model config
+    "-ac",
+    "1", // mono
     "-i",
-    "pipe:0", // read WAV from stdin
+    "pipe:0",
     "-codec:a",
     "libmp3lame",
     "-q:a",
     "2", // adjust quality as needed
     "-f",
     "mp3",
-    "pipe:1", // write MP3 to stdout
+    "pipe:1",
   ];
   const childProcess = spawn("ffmpeg", args, {
     stdio: ["pipe", "pipe", "pipe"],

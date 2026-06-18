@@ -5,9 +5,11 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
+    "init": "pnpm i --frozen-lockfile && cp --update=none .env.example .env || true",
     "start": "node dist/server.js",
     "dev": "tsc --watch",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "lint": "eslint src/ --fix",
     "format": "prettier . -w -u",
     "prepare": "husky || true"
@@ -33,6 +35,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
+    "@jest/globals": "^30.4.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.10.13",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
@@ -44,8 +48,11 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.5.0",
     "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "jest-extended": "^7.0.0",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
+    "ts-jest": "^29.4.11",
     "typescript": "^6.0.3"
   }
 }

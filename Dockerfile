@@ -42,11 +42,14 @@ ENV PATH="$VENV_DIR/bin:${PATH}" \
 ENV HUSKY=0
 
 # Install app dependencies as non-root and avoid a separate chown layer
-COPY --chown=node:node package.json pnpm-lock.yaml tsconfig.json ./
+COPY --chown=node:node package.json pnpm-lock.yaml tsconfig.json tsconfig.build.json ./
 RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node src ./src
 RUN pnpm build && pnpm prune --prod
+
+# Make /app and everything in it owned by `node` so pnpm can write its runtime temp files (and so bind-mounted dev workflows produce host-deletable files).
+RUN chown -R node:node /app
 
 USER node
 CMD ["pnpm", "start"]

@@ -1,6 +1,7 @@
 export {
-  spawnFfmpegMp3FromWav,
-  spawnPiperWavStdout,
+  readPiperModelSampleRate,
+  spawnFfmpegMp3FromPcm,
+  spawnPiperPcmStdout,
   synthesizeTextToMp3Buffer,
   verifyFfmpegInstallation,
   verifyPiperInstallation,

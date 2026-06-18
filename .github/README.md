@@ -4,67 +4,34 @@ Dockerized Node.js (ESM) RESTful API for offline text-to-speech using Piper TTS.
 
 🐳📦🚢 [The image in Docker Hub](https://hub.docker.com/r/9109679196/piper-tts-rest-api).
 
-> [!TIP]
->
-> This service can handle multiple requests sent to it simultaneously, but you might want to keep in mind that axios or any other library might timeout because of how long it is gonna take it to generate and stream back the response. And You can configure how many concurrent requests your service should be able to serve through `MAX_CONCURRENCY`.
+## Quick start
 
-## Logging System
+```bash
+docker run --rm -p 3000:3000 9109679196/piper-tts-rest-api:latest
+```
 
-This project includes a lightweight logging middleware that logs all incoming HTTP requests and their responses. You can configure it through environment variables:
+Then in another terminal:
 
-<details><summary><code>LOGGING_MODE</code></summary>
+```bash
+curl -X POST http://localhost:3000/speak \
+  -H 'content-type: application/json' \
+  -d '{"text":"Hello from Piper API"}' \
+  -o output.mp3
+```
 
-Available modes:
+The response is a streamed MP3 (`Transfer-Encoding: chunked`, no `Content-Length`).
 
-- **`PLAIN_TEXT`** (default): Human-readable format
-  ```bash
-  [2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] (correlationId: 2b20be5b-0028-4eec-9bfc-02aff54d006e) Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
-  ```
-- **`JSON`**: Structured JSON format (ideal for log aggregation tools)
-  ```json
-  {"timestamp":"2026-03-08T00:17:21.123Z","level":"info","service":"piper-tts-rest-api","correlationId":"65219ad1-21a6-44e5-a3d4-9bfb070d7566","context":"HttpMiddleware","message":"Incoming POST /speak","method":"POST","url":"/speak","headers":{...}}
-  ```
+## Endpoints
 
-</details>
-<details><summary><code>LOGGING_LEVEL</code></summary>
-
-Available levels (from least to most verbose):
-
-- **`error`**: Only error messages
-- **`warn`**: Warnings and errors
-- **`info`** (default): Informational messages, warnings, and errors
-- **`debug`**: Debug information and all above
-- **`verbose`**: All logs including verbose details
-
-</details>
-<details><summary><code>SERVICE_NAME</code></summary>
-
-- **Default**: `piper-tts-rest-api`
-- The name of the service shown in the logs.
-
-</details>
-
-> [!TIP]
->
-> Use this logging for monitoring and KPI (Key Performance Indicator) purposes.
-
-## API documentation
-
-For better tracking you can add a correlation ID to your requests:
-
-1. **If the client sends a `correlation-id` header**, it will be used and echoed back in the response.
-2. **If no `correlation-id` header is present**, the middleware generates a UUID and adds it to both the request and response headers.
+For better tracing you can add a `correlation-id` header to your requests; if you do, it's echoed back on the response. Otherwise the server generates a UUID per request.
 
 <table>
   <thead>
     <tr>
       <th>Endpoint</th>
-      <th>Request (Body formats)</th>
+      <th>Request</th>
       <th>Success response</th>
-      <th>Typical headers</th>
-      <th>Body</th>
-      <th>Examples</th>
-      <th>Validation / Errors</th>
+      <th>Errors</th>
     </tr>
   </thead>
   <tbody>
@@ -72,13 +39,8 @@ For better tracking you can add a correlation ID to your requests:
       <td><code>GET /health</code></td>
       <td>—</td>
       <td>
-        Status: <code>200</code><br>
-        Content-Type: <code>text/plain</code>
-      </td>
-      <td>—</td>
-      <td><code>OK</code></td>
-      <td>
-        <pre><code>curl -i http://localhost:3000/health</code></pre>
+        <code>200 OK</code>, <code>text/plain</code><br>
+        body: <code>OK</code>
       </td>
       <td>—</td>
     </tr>
@@ -89,89 +51,136 @@ For better tracking you can add a correlation ID to your requests:
           <li><code>application/json</code> with <code>{ "text": "..." }</code></li>
           <li><code>text/plain</code> with raw text body</li>
         </ul>
+        Max body: <code>1 MB</code> (≈150 000 words — plenty for typical use).
       </td>
       <td>
-        Status: <code>200</code> (streaming)<br>
-        Content-Type: <code>audio/mpeg</code>
-      </td>
-      <td>
-        <ul>
-          <li><code>Content-Disposition: inline; filename="&lt;generated&gt;.mp3"</code></li>
-          <li><code>Cache-Control: no-store</code></li>
-          <li>(HTTP/1.1 only) <code>Transfer-Encoding: chunked</code></li>
-          <li>No <code>Content-Length</code>; read until stream ends</li>
-        </ul>
-      </td>
-      <td>MP3 audio stream (bytes sent progressively)</td>
-      <td>
-        <pre><code># JSON input
-curl -X POST http://localhost:3000/speak \
-  -H 'content-type: application/json' \
-  -H "correlation-id: 4484f9a3-7edb-492e-b815-52893ecb8eae" \
-  -d '{"text":"Hello from Piper API"}' \
-  -o output.mp3</pre></code><pre><code>
-# Plain text input
-curl -X POST http://localhost:3000/speak \
-  -H 'content-type: text/plain' \
-  --data 'Hello from plain text body' \
-  -o output.mp3</code></pre>
+        <code>200 OK</code> (streaming)<br>
+        <code>Content-Type: audio/mpeg</code><br>
+        <code>Content-Disposition: inline; filename="&lt;generated&gt;.mp3"</code><br>
+        <code>Cache-Control: no-store</code><br>
+        <code>Transfer-Encoding: chunked</code><br>
+        Body: MP3 audio stream — read until the stream ends.
       </td>
       <td>
         <ul>
-          <li><code>400</code> invalid JSON or missing/empty text</li>>
+          <li><code>400</code> invalid JSON or missing/empty text</li>
           <li><code>413</code> payload too large</li>
-          <li><code>500</code> synthesis/transcoding failures</li>
+          <li><code>500</code> synthesis or transcoding failure</li>
         </ul>
       </td>
     </tr>
   </tbody>
 </table>
 
-> [!TIP]
->
-> Here we will spawn a new child process for each request to the speak API, what that entails is loading the model in memory again and again. It can be said that it is **NOT a good idea if you need lowest latency / highest throughput**.
+### Examples
+
+```bash
+# JSON input
+curl -X POST http://localhost:3000/speak \
+  -H 'content-type: application/json' \
+  -H 'correlation-id: 4484f9a3-7edb-492e-b815-52893ecb8eae' \
+  -d '{"text":"Hello from Piper API"}' \
+  -o output.mp3
+
+# Plain text input
+curl -X POST http://localhost:3000/speak \
+  -H 'content-type: text/plain' \
+  --data 'Hello from plain text body' \
+  -o output.mp3
+```
+
+## Concurrency and cancellation
+
+`POST /speak` is gated by an in-memory semaphore sized by `MAX_CONCURRENCY` (default `10`). The slot is held **for the entire lifetime of the work** — body parsing, piper synthesis, ffmpeg encoding, and streaming to the client — not just until child processes are spawned. So `MAX_CONCURRENCY` is an honest end-to-end concurrency cap.
+
+When a client closes the connection before the response is fully sent (e.g. the user navigates away, the upstream service aborts via `AbortController`, or curl is `Ctrl-C`'d), the server kills the in-flight `piper` and `ffmpeg` child processes via `SIGKILL` and waits for them to exit before releasing the semaphore slot.
+
+The net effect: **aborting an in-flight `/speak` request immediately frees a concurrency slot**, so a queued or subsequent request can start synthesis without waiting for the cancelled one to run to completion. This is useful for callers that implement supersede-with-retry patterns — a force-regenerate, for example, can cancel an in-flight TTS HTTP call to free CPU on the TTS host before kicking off a new one.
 
 > [!NOTE]
 >
-> The maximum allowed text size is more than enough for 90% of scenarios (learn more [here](./src/config/index.js)), and keep in mind that if for any reason you try to upload even half of the allowed maximum size you'd have to wait for roughly 15 minutes:
+> Cancellation is per-process and per-replica. If you run multiple replicas behind a load balancer, aborting a request only frees the slot on the replica that was handling it. There is no cross-replica cancellation.
+
+> [!TIP]
 >
-> ```bash
-> wc input/half-maximum-allowed-size.txt
-> # 3507     81663 492149 input/half-maximum-allowed-size.txt
-> # ⬆️       ⬆️    ⬆️
-> # newline, word, byte counts
-> ls -lh input/half-maximum-allowed-size.txt
-> # -rw-rw-r-- 1 kasir kasir 481K Feb 23 00:20 input/half-maximum-allowed-size.txt
->   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
->                                  Dload  Upload   Total   Spent    Left  Speed
-> 100  225M  100  224M  100  480k   252k    540  0:15:11  0:15:11 --:--:-- 53.0M
-> -rw-rw-r-- 1 mjb mjb 225M Feb 23 01:14 hello-world.mp3
-> ```
+> Pick a client-side timeout that allows for synthesis: piper takes ~2 s before producing the first audio byte for short inputs, and proportionally longer for longer text. Aggressive timeouts will cause spurious cancellations.
 
-## Piper TTS notes
+## Performance characteristics
 
-This project uses Piper as the TTS engine and ffmpeg for MP3 encoding:
+Each `/speak` request spawns a fresh `piper` child process which loads the ONNX voice model (~61 MB for the bundled medium-quality voices) and initialises the ONNX runtime before it can begin synthesis. This adds a fixed **~1.7–2 s of cold-start cost per request**, on top of the actual synthesis time.
 
-1. Piper generates temporary WAV audio.
-2. ffmpeg converts WAV to MP3.
-3. API returns MP3 bytes to the client.
+This service is deliberately **not** optimised for lowest-latency-per-request or highest-throughput workloads. The CLI we drive (`piper --output-raw`) has no daemon mode, so a long-lived in-memory model is not on the table without rewriting against piper's Python library. If your use case is latency-sensitive (e.g. interactive UI feedback), drive piper from Python with a single long-lived model handle instead of going through this REST API.
 
-Default model in container:
+For batch / offline-narration workloads — which is what this service is designed for — the 2 s cold start is negligible compared to the actual synthesis time of multi-paragraph inputs, and the per-request process boundary makes cancellation and resource cleanup trivial (see [Concurrency and cancellation](#concurrency-and-cancellation) above).
 
-- `/app/models/en_US-lessac-medium.onnx`
+## Configuration
 
-Environment variables:
+All configuration is via environment variables.
 
-- `PORT` (default: `3000`)
-- `PIPER_MODEL` (default shown above)
+| Variable          | Default                                | Description                                                                                                                                              |
+| ----------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`            | `3000`                                 | HTTP port the server listens on.                                                                                                                         |
+| `PIPER_MODEL`     | `/app/models/en_US-lessac-medium.onnx` | Path to the Piper voice model. The matching `<model>.onnx.json` sidecar must exist next to it (the server reads `audio.sample_rate` from it at startup). |
+| `MAX_CONCURRENCY` | `10`                                   | Maximum number of `/speak` requests handled concurrently. Additional requests queue at the semaphore until a slot is freed.                              |
+| `SERVICE_NAME`    | `piper-tts-rest-api`                   | Service name shown in log lines.                                                                                                                         |
+| `LOGGING_MODE`    | `PLAIN_TEXT`                           | `PLAIN_TEXT` or `JSON`. See [Logging](#logging) below.                                                                                                   |
+| `LOGGING_LEVEL`   | `info`                                 | One of `error`, `warn`, `info`, `debug`, `verbose`.                                                                                                      |
 
-### Piper TTS Models for English
+The maximum request body size (1 MB) is fixed in [`src/shared/config.ts`](../src/shared/config.ts) (`maxBodySizeBytes`).
 
-- `/app/models/en_US-lessac-medium.onnx`.
-- `/app/models/en_US-ryan-medium.onnx`.
-- `/app/models/en_US-libritts_r-medium.onnx`.
-- `/app/models/en_US-ljspeech-medium.onnx`.
-- `/app/models/en_US-amy-medium.onnx`.
-- `/app/models/en_US-joe-medium.onnx`.
-- `/app/models/en_US-john-medium.onnx`.
-- `/app/models/en_US-kristin-medium.onnx`.
+## Logging
+
+Every request and response is logged with a correlation ID for tracing.
+
+<details><summary><code>LOGGING_MODE=PLAIN_TEXT</code> (default)</summary>
+
+```
+[2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] (correlationId: 2b20be5b-0028-4eec-9bfc-02aff54d006e) Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
+```
+
+</details>
+
+<details><summary><code>LOGGING_MODE=JSON</code></summary>
+
+```json
+{
+  "timestamp": "2026-03-08T00:17:21.123Z",
+  "level": "info",
+  "service": "piper-tts-rest-api",
+  "correlationId": "65219ad1-21a6-44e5-a3d4-9bfb070d7566",
+  "context": "HttpMiddleware",
+  "message": "Incoming POST /speak",
+  "method": "POST",
+  "url": "/speak",
+  "headers": {}
+}
+```
+
+Use this for log aggregators (e.g. Loki, Elasticsearch, Datadog).
+
+</details>
+
+## How the audio pipeline works
+
+The service streams audio end-to-end with no intermediate files:
+
+1. `piper --output-raw` writes signed 16-bit little-endian mono PCM samples to its stdout.
+2. ffmpeg reads that raw PCM (`-f s16le -ar <rate> -ac 1 -i pipe:0`) and encodes MP3 on the fly.
+3. The API streams ffmpeg's MP3 output to the HTTP response with `Transfer-Encoding: chunked`.
+
+The PCM sample rate is read once at process startup from the model's `.onnx.json` sidecar (`audio.sample_rate`) and passed to ffmpeg.
+
+## Bundled English voice models
+
+The Docker image ships these Piper voices under `/app/models/`:
+
+- `en_US-lessac-medium.onnx` (default)
+- `en_US-ryan-medium.onnx`
+- `en_US-libritts_r-medium.onnx`
+- `en_US-ljspeech-medium.onnx`
+- `en_US-amy-medium.onnx`
+- `en_US-joe-medium.onnx`
+- `en_US-john-medium.onnx`
+- `en_US-kristin-medium.onnx`
+
+Switch voices via `PIPER_MODEL=/app/models/<voice>.onnx`.

@@ -75,4 +75,10 @@ export default [
       'import/named': ['off'],
     },
   },
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

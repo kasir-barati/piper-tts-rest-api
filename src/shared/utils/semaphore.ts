@@ -9,6 +9,9 @@ export class Semaphore {
     this.queue = [];
   }
 
+  /**
+   * @description The semaphore's `finally` always releases the slot, so if clients need to make sure the callback always returns (never throws an error). You must handle errors gracefully (e.g. use a `try...catch` statement inside the callback and do NOT rethrow the error).
+   */
   async run<T>(fn: () => Promise<T>): Promise<T> {
     if (this.count >= this.max) {
       await new Promise<void>((resolve) => this.queue.push(resolve));
