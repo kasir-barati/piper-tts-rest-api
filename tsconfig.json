@@ -4,7 +4,6 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "strict": true,
-    "esModuleInterop": true,
     "types": ["node", "jest", "jest-extended"],
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
