@@ -2,6 +2,7 @@
 
 import { FlatCompat } from "@eslint/eslintrc";
 import js from "@eslint/js";
+import localRules from "./eslint-rules/index.mjs";
 import typescriptEslintEslintPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import importPlugin from "eslint-plugin-import";
@@ -20,7 +21,9 @@ const compat = new FlatCompat({
 });
 
 export default [
-  { ignores: ["eslint.config.mjs", "dist/"] },
+  {
+    ignores: ["eslint.config.mjs", "eslint-rules/**", "**/dist"],
+  },
   ...compat.extends(
     "plugin:@typescript-eslint/recommended",
     "plugin:prettier/recommended",
@@ -32,6 +35,7 @@ export default [
       "import/no-unresolved": ["off"],
       "import/named": ["off"],
       "no-console": ["error"],
+      curly: ["error", "all"],
     },
   },
   {
@@ -77,8 +81,13 @@ export default [
   },
   {
     files: ["**/*.spec.ts"],
+    plugins: {
+      local: localRules,
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "local/aaa-spacing": "error",
+      "local/no-conditionals-in-tests": "error",
     },
   },
 ];

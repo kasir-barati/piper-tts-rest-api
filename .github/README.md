@@ -122,9 +122,38 @@ All configuration is via environment variables.
 | `PORT`            | `3000`                                 | HTTP port the server listens on.                                                                                                                         |
 | `PIPER_MODEL`     | `/app/models/en_US-lessac-medium.onnx` | Path to the Piper voice model. The matching `<model>.onnx.json` sidecar must exist next to it (the server reads `audio.sample_rate` from it at startup). |
 | `MAX_CONCURRENCY` | `10`                                   | Maximum number of `/speak` requests handled concurrently. Additional requests queue at the semaphore until a slot is freed.                              |
-| `SERVICE_NAME`    | `piper-tts-rest-api`                   | Service name shown in log lines.                                                                                                                         |
+| `SERVICE_NAME`    | `piper-tts-rest-api`                   | Service name shown in log lines and used as the OpenTelemetry `service.name` resource attribute.                                                         |
 | `LOGGING_MODE`    | `PLAIN_TEXT`                           | `PLAIN_TEXT` or `JSON`. See [Logging](#logging) below.                                                                                                   |
 | `LOGGING_LEVEL`   | `info`                                 | One of `error`, `warn`, `info`, `debug`, `verbose`.                                                                                                      |
+
+### Optional OpenTelemetry
+
+The published image ships with the OpenTelemetry Node SDK, but it is **disabled by default**. Set `OTEL_ENABLED=true` to opt in. When disabled, the SDK is never started and the image runs with zero OTel overhead.
+
+| Variable                       | Default                    | Description                                                                                                                                                                                                              |
+| ------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OTEL_ENABLED`                 | `false`                    | Set to `true` to start the OTel SDK. Any other value (or unset) → SDK is a no-op.                                                                                                                                        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`  | _(none)_                   | OTLP HTTP base URL of your collector. e.g. `http://otel-collector:4318`. The SDK appends `/v1/traces`.                                                                                                                   |
+| `OTEL_TRACES_SAMPLER`          | `parentbased_traceidratio` | Standard OTel sampler name. See the [OTel sampling spec](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration).                                                   |
+| `OTEL_TRACES_SAMPLER_ARG`      | `1.0`                      | Ratio between `0` and `1` for ratio-based samplers. Use `1.0` in dev and lower values in prod (e.g. `0.05` = keep 5%).                                                                                                   |
+| `OTEL_BATCH_MAX_PENDING_SPANS` | `2048`                     | Max spans held in the in-memory queue waiting to be exported. Spans beyond this cap are dropped (with a diag warning) — acts as a back-pressure safety valve if the collector is slow/unreachable.                       |
+| `OTEL_BATCH_SPANS_PER_EXPORT`  | `512`                      | Max spans sent in a single export request. The processor flushes immediately once the queue reaches this size, regardless of the scheduled delay. Smaller = more frequent, smaller payloads.                             |
+| `OTEL_BATCH_FLUSH_INTERVAL_MS` | `5000`                     | Interval (ms) at which the processor wakes up and flushes whatever is currently queued, even if `OTEL_BATCH_SPANS_PER_EXPORT` hasn't been reached. Lower = fresher data in the backend, higher = fewer HTTP round-trips. |
+| `OTEL_BATCH_EXPORT_TIMEOUT_MS` | `30000`                    | Hard deadline (ms) for a single export call to the OTLP endpoint. If the collector doesn't respond within this window the export is aborted and the spans in that batch are dropped (not retried).                       |
+
+**What gets traced**
+
+- `POST /speak` — automatically traced by `@opentelemetry/instrumentation-http`. The incoming `traceparent` header is honored, so traces created by an upstream caller (e.g. a NestJS backend) are continued here.
+- A child span `tts.synthesize` wraps the body parsing, piper synthesis, ffmpeg encoding, and streaming, with attributes `tts.text_length`, `tts.piper_model`, `tts.piper_sample_rate`.
+- `GET /health` is intentionally **not** traced.
+
+**Response header**
+
+When OTel is enabled, every response carries an `x-trace-id` header containing the 32-hex W3C trace ID of the current trace. This is separate from `traceparent` (which is for server-to-server propagation) and intended for client-side debugging — paste the value into your Jaeger / Tempo UI to find the trace.
+
+**Hooking it up to a collector**
+
+Point `OTEL_EXPORTER_OTLP_ENDPOINT` to your own collector and set `OTEL_ENABLED=true`.
 
 The maximum request body size (1 MB) is fixed in [`src/shared/config.ts`](../src/shared/config.ts) (`maxBodySizeBytes`).
 

@@ -1,3 +1,5 @@
+import "./instrumentation.js"; // 👈 MUST be the very first import. Starts the OpenTelemetry.
+
 import {
   createServer as createHttpServer,
   type IncomingMessage,

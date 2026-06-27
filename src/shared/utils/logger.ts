@@ -94,6 +94,13 @@ export class Logger {
   }
 }
 
+/**
+ * @summary creates a logger instance.
+ * @description Safe to be used in `src/instrumentation.ts`. `src/shared/utils/logger.ts` has no side effects at import time and uses only `console.*` internally. Importing & using it in the OTel does **NOT** defeat OTel auto-instrumentation.
+ *
+ * ## ⚠️ Warning
+ * If `logger.ts` touches anything in the auto-instrumentation list, it could interfere with OTel auto-instrumentation.
+ */
 export function createLogger(
   level: LogLevel,
   mode: LogMode,

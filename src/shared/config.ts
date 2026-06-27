@@ -14,6 +14,13 @@ export const config = {
      * @default 'piper-tts-rest-api'
      */
     name: process.env.SERVICE_NAME ?? "piper-tts-rest-api",
+
+    /**
+     * @type {'production' | 'development' | 'test'}
+     * @description Environment the service is running in.
+     * @default 'production'
+     */
+    env: process.env.NODE_ENV ?? "production",
   },
 
   /**
@@ -48,5 +55,41 @@ export const config = {
      */
     level: ((process.env.LOGGING_LEVEL as LogLevel | undefined) ??
       "info") as LogLevel,
+  },
+
+  otel: {
+    enabled: process.env.OTEL_ENABLED === "true",
+    /** @type {string | undefined} */
+    exporterEndpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    batchConfig: {
+      /**
+       * @description Max spans held in the in-memory queue waiting to be exported. Spans beyond this cap are dropped (with a diag warning) — acts as a back-pressure safety valve if the collector is slow/unreachable.
+       */
+      maxPendingSpans: Number.parseInt(
+        process.env.OTEL_BATCH_MAX_PENDING_SPANS ?? "2048",
+        10,
+      ),
+      /**
+       * @description Max spans sent in a single export request. The processor flushes immediately once the queue reaches this size, regardless of the scheduled delay. Smaller = more frequent, smaller payloads.
+       */
+      spansPerExport: Number.parseInt(
+        process.env.OTEL_BATCH_SPANS_PER_EXPORT ?? "512",
+        10,
+      ),
+      /**
+       * @description Interval at which the processor wakes up and flushes whatever is currently queued, even if `maxExportBatchSize` hasn't been reached. Trade-off: lower = fresher data in the backend, higher = fewer HTTP round-trips.
+       */
+      flushIntervalMs: Number.parseInt(
+        process.env.OTEL_BATCH_FLUSH_INTERVAL_MS ?? "5000",
+        10,
+      ),
+      /**
+       * @description Hard deadline for a single export call to the OTLP endpoint. If the collector doesn't respond within this window the export is aborted and the spans in that batch are dropped (not retried).
+       */
+      exportTimeoutMs: Number.parseInt(
+        process.env.OTEL_BATCH_EXPORT_TIMEOUT_MS ?? "30000",
+        10,
+      ),
+    },
   },
 } as const;
