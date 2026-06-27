@@ -21,8 +21,8 @@ services:
     volumes:
       - ./local-setup/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     ports:
-      - 4318:4318 # OTLP HTTP
-      - 4317:4317 # OTLP gRPC
+      - 4318:4318 # OTLP HTTP -- apps point OTEL_EXPORTER_OTLP_ENDPOINT to this port
+      - 4317:4317 # OTLP gRPC -- Apps push traces via gRPC to this port
 
   otel-healthcheck:
     image: busybox:1.37
