@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "init": "pnpm i --frozen-lockfile && cp --update=none .env.example .env || true",
-    "start": "node dist/server.js",
+    "start": "node --import ./dist/instrumentation.js dist/server.js # ⚠️ The OpenTelemetry SDK is NOT imported in `server.ts`. It is bootstrapped via Node's `--import ./dist/instrumentation.js` flag so that the SDK starts in a preload phase BEFORE this module's `import` statements are evaluated. That ordering is required for `@opentelemetry/instrumentation-http` to monkey-patch `node:http` before we hand `createHttpServer` a route handler. A regular side-effect import here would not work: ESM hoists every `import` in a module to the top of its evaluation phase, so `node:http` would be resolved (and its exports captured) before `instrumentation.js`'s body — and thus `sdk.start()` — ever runs.",
     "dev": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "lint": "eslint src/ --fix",
@@ -59,6 +59,7 @@
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/core": "^2.8.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/instrumentation": "^0.219.0",
     "@opentelemetry/instrumentation-http": "^0.219.0",
     "@opentelemetry/resources": "^2.8.0",
     "@opentelemetry/sdk-node": "^0.219.0",

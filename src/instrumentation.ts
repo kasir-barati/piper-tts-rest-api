@@ -1,16 +1,24 @@
 /**
  * @fileoverview OpenTelemetry bootstrap for piper-tts-rest-api.
  *
- * MUST be imported as the very first line of `server.ts` so the SDK starts before any `node:http` server is created (auto-instrumentation needs to wrap `http.createServer` before our code calls it).
+ * This module MUST be loaded as a Node preload via `node --import` so the SDK starts before any user module — and crucially before `node:http` — is resolved. That is the only way `@opentelemetry/instrumentation-http` can monkey-patch `http.createServer` before our route layer captures a reference to the un-patched function.
  *
- * Driven entirely by env vars so consumers of the published Docker image can opt in / out without rebuilding:
- *
- * - OTEL_ENABLED
- * - OTEL_EXPORTER_OTLP_ENDPOINT
- * - SERVICE_NAME
- * - OTEL_TRACES_SAMPLER / OTEL_TRACES_SAMPLER_ARG
- *
+ * Wired up in `package.json`'s "start" script. A plain `import "./instrumentation.js"` in the `server.ts` is NOT sufficient under ESM: all `import` statements in a module are evaluated before its body runs, so `node:http` would be captured before the SDK started.
  */
+
+/**
+ * @note
+ * Register `import-in-the-middle` as a Node module-customization hook BEFORE we import anything else. Under ESM, `--import` alone is not enough to make `@opentelemetry/instrumentation-http` patch `node:http`: the instrumentation's monkey-patching mechanism relies on intercepting the import resolution of the target module, which under ESM only happens if a loader hook is registered. `@opentelemetry/instrumentation/hook.mjs` ships a thin wrapper around `import-in-the-middle` that exposes exactly such a hook. We register it via `node:module#register` (stable on Node ≥ 20.6) and *only* on the current module's parent URL so the hook applies to the whole runtime.
+ *
+ * Without this block, you will see:
+ *
+ * - No `POST /...` server span from `@opentelemetry/instrumentation-http`.
+ * - Incoming `traceparent` headers silently dropped (no context extraction).
+ * - Every manual span becoming a root span.
+ */
+import { register } from "node:module";
+
+register("@opentelemetry/instrumentation/hook.mjs", import.meta.url);
 
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
 import {
