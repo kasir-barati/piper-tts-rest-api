@@ -24,21 +24,27 @@ services:
       - 4318:4318 # OTLP HTTP -- apps point OTEL_EXPORTER_OTLP_ENDPOINT to this port
       - 4317:4317 # OTLP gRPC -- Apps push traces via gRPC to this port
 
+  # One-shot sidecar that blocks `piper-tts` until the collector's health_check extension is serving 200 OK. The collector image itself is distroless (no shell, no wget/curl), so an in-container `healthcheck:` cannot be used -- hence this separate busybox container.
   otel-healthcheck:
     image: busybox:1.37
     depends_on:
       otel-collector:
         condition: service_started
-    command: >
-      sh -c '
-        for i in $$(seq 1 30); do
-          wget -qO- http://otel-collector:13133/ && exit 0
-          echo "Waiting for otel-collector health endpoint..."
+    command:
+      - sh
+      - -eu
+      - -c
+      - |
+        for i in $$(seq 1 60); do
+          if wget -S -qO- --timeout=3 http://otel-collector:13133/ 2>&1; then
+            echo "otel-collector is healthy after $$i attempt(s)"
+            exit 0
+          fi
+          echo "[$$i/60] otel-collector not ready yet, retrying in 2s..."
           sleep 2
         done
-        echo "otel-collector did not become healthy in time"
+        echo "ERROR: otel-collector did not become healthy within 120s" >&2
         exit 1
-      '
 
   jaeger:
     image: jaegertracing/all-in-one:1.62.0

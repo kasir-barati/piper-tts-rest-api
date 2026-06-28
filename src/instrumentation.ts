@@ -50,7 +50,12 @@ if (!config.otel.enabled) {
     context: "Instrumentation",
   });
 } else {
-  diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+  diag.setLogger(
+    new DiagConsoleLogger(),
+    process.env.NODE_ENV === "development"
+      ? DiagLogLevel.DEBUG
+      : DiagLogLevel.WARN,
+  );
 
   const exporter = new OTLPTraceExporter({
     url: config.otel.exporterEndpoint
