@@ -23,8 +23,6 @@ The response is a streamed MP3 (`Transfer-Encoding: chunked`, no `Content-Length
 
 ## Endpoints
 
-For better tracing you can add a `correlation-id` header to your requests; if you do, it's echoed back on the response. Otherwise the server generates a UUID per request.
-
 <table>
   <thead>
     <tr>
@@ -78,7 +76,6 @@ For better tracing you can add a `correlation-id` header to your requests; if yo
 # JSON input
 curl -X POST http://localhost:3000/speak \
   -H 'content-type: application/json' \
-  -H 'correlation-id: 4484f9a3-7edb-492e-b815-52893ecb8eae' \
   -d '{"text":"Hello from Piper API"}' \
   -o output.mp3
 
@@ -159,12 +156,12 @@ The maximum request body size (1 MB) is fixed in [`src/shared/config.ts`](../src
 
 ## Logging
 
-Every request and response is logged with a correlation ID for tracing.
+Every request and response is logged. For end-to-end tracing across services, enable [OpenTelemetry](#optional-opentelemetry).
 
 <details><summary><code>LOGGING_MODE=PLAIN_TEXT</code> (default)</summary>
 
 ```
-[2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] (correlationId: 2b20be5b-0028-4eec-9bfc-02aff54d006e) Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
+[2026-03-08T00:17:21.123Z]     HttpMiddleware       [piper-tts-rest-api] Incoming POST /speak | {"method":"POST","url":"/speak","headers":{...}}
 ```
 
 </details>
@@ -176,7 +173,6 @@ Every request and response is logged with a correlation ID for tracing.
   "timestamp": "2026-03-08T00:17:21.123Z",
   "level": "info",
   "service": "piper-tts-rest-api",
-  "correlationId": "65219ad1-21a6-44e5-a3d4-9bfb070d7566",
   "context": "HttpMiddleware",
   "message": "Incoming POST /speak",
   "method": "POST",

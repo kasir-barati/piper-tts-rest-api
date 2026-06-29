@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { getCorrelationId, type Logger } from "../shared/index.js";
+import { type Logger } from "../shared/index.js";
 
 type RequestHandler = (
   req: IncomingMessage,
@@ -14,10 +14,6 @@ export function createLoggingMiddleware(
   logger: Logger,
 ): (req: IncomingMessage, res: ServerResponse, next: () => void) => void {
   return (req, res, next) => {
-    const correlationId = getCorrelationId(req);
-
-    res.setHeader("correlation-id", correlationId);
-
     const startTime = Date.now();
     const method = req.method ?? "UNKNOWN";
     const url = req.url ?? "/";
@@ -25,7 +21,6 @@ export function createLoggingMiddleware(
     // Log incoming request
     logger.info(`Incoming ${method} ${url}`, {
       context: "HttpMiddleware",
-      correlationId,
       method,
       url,
       headers: req.headers,
@@ -39,7 +34,6 @@ export function createLoggingMiddleware(
 
       logger.info(`Completed ${method} ${url}`, {
         context: "HttpMiddleware",
-        correlationId,
         method,
         url,
         statusCode,
@@ -64,10 +58,6 @@ export function withLogging(
   handler: RequestHandler,
 ): RequestHandler {
   return (req, res) => {
-    const correlationId = getCorrelationId(req);
-
-    res.setHeader("correlation-id", correlationId);
-
     const startTime = Date.now();
     const method = req.method ?? "UNKNOWN";
     const url = req.url ?? "/";
@@ -75,7 +65,6 @@ export function withLogging(
     // Log incoming request
     logger.info(`Incoming ${method} ${url}`, {
       context: "HttpMiddleware",
-      correlationId,
       method,
       url,
       headers: req.headers,
@@ -89,7 +78,6 @@ export function withLogging(
 
       logger.info(`Completed ${method} ${url}`, {
         context: "HttpMiddleware",
-        correlationId,
         method,
         url,
         statusCode,

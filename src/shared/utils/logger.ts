@@ -1,105 +1,105 @@
-/* eslint-disable no-console */
+import type { Logger as WinstonLogger } from "winston";
+
+import {
+  createLogger as createWinstonLogger,
+  format,
+  transports,
+} from "winston";
+
 export type LogLevel = "error" | "warn" | "info" | "debug" | "verbose";
 export type LogMode = "PLAIN_TEXT" | "JSON";
 export interface LogMetadata {
   context?: string;
-  correlationId?: string;
   [key: string]: unknown;
 }
 
-const LOG_LEVELS: Record<LogLevel, number> = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
-  verbose: 4,
-};
+/**
+ * @description Custom printf used in `PLAIN_TEXT` mode. Mirrors the format previously hand-rolled in this file so existing log-scraping / eyeballing habits still work.
+ */
+const plainTextFormat = format.printf((info) => {
+  const {
+    timestamp,
+    message,
+    service,
+    context,
+    // Winston injects these symbol-keyed fields; pull them out so they don't pollute the trailing JSON blob.
+    [Symbol.for("level")]: _splatLevel,
+    [Symbol.for("message")]: _splatMessage,
+    [Symbol.for("splat")]: _splat,
+    level: _level,
+    ...extraData
+  } = info;
+  const contextPart =
+    typeof context === "string" ? context.padEnd(20) : "".padEnd(20);
+  const servicePart = service ? `[${String(service)}]` : "";
+
+  let line = `[${timestamp}]     ${contextPart} ${servicePart} ${String(
+    message,
+  )}`;
+
+  if (Object.keys(extraData).length > 0) {
+    line += ` | ${JSON.stringify(extraData)}`;
+  }
+
+  return line;
+});
 
 /**
- * Lightweight logger class that supports different log levels and output modes.
+ * @description Lightweight facade over a winston logger.
  */
 export class Logger {
-  #currentLevel: number;
-  #mode: LogMode;
-  #serviceName: string;
+  readonly #logger: WinstonLogger;
+  readonly #serviceName: string;
 
   constructor(level: LogLevel, mode: LogMode, serviceName: string) {
-    this.#currentLevel = LOG_LEVELS[level] ?? LOG_LEVELS.info;
-    this.#mode = mode;
     this.#serviceName = serviceName;
+    this.#logger = createWinstonLogger({
+      level: level,
+      defaultMeta: { service: serviceName },
+      format:
+        mode === "JSON"
+          ? format.combine(format.timestamp(), format.json())
+          : format.combine(format.timestamp(), plainTextFormat),
+      transports: [new transports.Console()],
+    });
   }
 
   error(message: string, metadata: LogMetadata = {}): void {
-    this.#log("error", message, metadata, console.error);
+    this.#logger.error(message, metadata);
   }
 
   warn(message: string, metadata: LogMetadata = {}): void {
-    this.#log("warn", message, metadata, console.warn);
+    this.#logger.warn(message, metadata);
   }
 
   info(message: string, metadata: LogMetadata = {}): void {
-    this.#log("info", message, metadata, console.info);
+    this.#logger.info(message, metadata);
   }
 
   debug(message: string, metadata: LogMetadata = {}): void {
-    this.#log("debug", message, metadata, console.debug);
+    this.#logger.debug(message, metadata);
   }
 
   verbose(message: string, metadata: LogMetadata = {}): void {
-    this.#log("verbose", message, metadata, console.log);
+    this.#logger.verbose(message, metadata);
   }
 
-  #log(
-    level: LogLevel,
-    message: string,
-    metadata: LogMetadata,
-    consoleFn: (...args: unknown[]) => void,
-  ): void {
-    if (LOG_LEVELS[level] > this.#currentLevel) {
-      return;
-    }
+  /**
+   * @internal Exposed for tests / advanced consumers that need the underlying winston instance (e.g. to attach extra transports).
+   */
+  get raw(): WinstonLogger {
+    return this.#logger;
+  }
 
-    const timestamp = new Date().toISOString();
-    const { context, correlationId, ...extraData } = metadata;
-
-    if (this.#mode === "JSON") {
-      const logEntry = {
-        timestamp,
-        level,
-        service: this.#serviceName,
-        message,
-        ...(context && { context }),
-        ...(correlationId && { correlationId }),
-        ...extraData,
-      };
-      consoleFn(JSON.stringify(logEntry));
-    } else {
-      // PLAIN_TEXT mode
-      const contextPart = context ? `${context.padEnd(20)}` : "".padEnd(20);
-      const servicePart = `[${this.#serviceName}]`;
-      const correlationPart = correlationId
-        ? ` (correlationId: ${correlationId})`
-        : "";
-
-      let logMessage = `[${timestamp}]     ${contextPart} ${servicePart}${correlationPart} ${message}`;
-
-      // Append extra metadata if present
-      if (Object.keys(extraData).length > 0) {
-        const extraDataStr = JSON.stringify(extraData);
-        logMessage += ` | ${extraDataStr}`;
-      }
-
-      consoleFn(logMessage);
-    }
+  get serviceName(): string {
+    return this.#serviceName;
   }
 }
 
 /**
  * @summary creates a logger instance.
- * @description Safe to be used in `src/instrumentation.ts`. `src/shared/utils/logger.ts` has no side effects at import time and uses only `console.*` internally. Importing & using it in the OTel does **NOT** defeat OTel auto-instrumentation.
  *
- * ## ⚠️ Warning
- * If `logger.ts` touches anything in the auto-instrumentation list, it could interfere with OTel auto-instrumentation.
+ * ## ⚠️ Do NOT import this module from `src/instrumentation.ts`
  */
 export function createLogger(
   level: LogLevel,

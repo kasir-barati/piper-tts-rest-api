@@ -1,5 +1,4 @@
 export { extractTextFromRequestBody, readRawBody } from "./body.js";
-export { getCorrelationId } from "./get-correlation-id.js";
 export { sendBinary, sendJson, sendText } from "./http.js";
 export {
   createLogger,

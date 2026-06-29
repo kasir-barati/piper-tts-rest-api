@@ -91,5 +91,30 @@ export const config = {
         10,
       ),
     },
+    /**
+     * @description Same trade-offs as `batchConfig` but for the log record pipeline driven by `BatchLogRecordProcessor`. Logs are typically chattier than spans so it's worth tuning these independently.
+     */
+    logsBatchConfig: {
+      /** Max log records held in memory before back-pressure drops the oldest. */
+      maxPendingLogs: Number.parseInt(
+        process.env.OTEL_LOGS_BATCH_MAX_PENDING ?? "2048",
+        10,
+      ),
+      /** Max log records flushed in a single export request. */
+      logsPerExport: Number.parseInt(
+        process.env.OTEL_LOGS_BATCH_PER_EXPORT ?? "512",
+        10,
+      ),
+      /** How often the processor flushes whatever is queued. */
+      flushIntervalMs: Number.parseInt(
+        process.env.OTEL_LOGS_BATCH_FLUSH_INTERVAL_MS ?? "5000",
+        10,
+      ),
+      /** Per-export hard deadline before the batch is aborted. */
+      exportTimeoutMs: Number.parseInt(
+        process.env.OTEL_LOGS_BATCH_EXPORT_TIMEOUT_MS ?? "30000",
+        10,
+      ),
+    },
   },
 } as const;
